@@ -1,0 +1,36 @@
+# secrets
+.env
+
+# upstream clone, owned by the updater
+/NostalgiaForInfinity/
+
+# DB snapshots written by the dbbackup container
+/backups/
+
+# updater runtime state
+/services/updater/state/
+
+# live trading state
+user_data/*.sqlite
+user_data/*.sqlite-shm
+user_data/*.sqlite-wal
+user_data/nfi*-profit_max-*.json
+user_data/nfi-hold-trades.json
+user_data/logs/
+user_data/data/
+user_data/backtest_results/
+user_data/hyperopt_results/
+user_data/plot/
+
+__pycache__/
+*.py[cod]
+
+# backtest lab: candles, results and logs are bulk and regenerable
+/lab/data/
+/lab/results/
+/lab/logs/
+/lab/*.log
+# historical X7 copies, 3MB each, regenerable with
+#   git -C NostalgiaForInfinity show <sha>:NostalgiaForInfinityX7.py
+# The overlays beside them (NFIX7Risk/Cap/Stop) are small and tracked.
+/lab/strategies-*/NostalgiaForInfinityX7.py

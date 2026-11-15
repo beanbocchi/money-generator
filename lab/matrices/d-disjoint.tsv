@@ -1,0 +1,14 @@
+# Disjoint 120-pair universe, zero overlap with universe 1, 1m detail restored.
+# Sized from measurement: a 272-pair run peaked at ~11.4GB against ~4-6GB typically
+# available and was OOM-killed repeatedly. At ~43MB/pair, 120 pairs projects to ~5GB.
+# Dropping --timeframe-detail 1m was tried first and did NOT help (11.54 -> 11.37GB),
+# so the memory is NFI computing indicators over pairs x 5 timeframes, not 1m data.
+# Zero overlap is also a cleaner rule-4 test than 272 pairs sharing 43 with universe 1.
+d-with-20260501	NFIX7Risk	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/disjoint.json
+d-without-20260501	NostalgiaForInfinityX7	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780	lab/pairlists/disjoint.json
+d-with-20260604	NFIX7Risk	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/disjoint.json
+d-without-20260604	NostalgiaForInfinityX7	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780	lab/pairlists/disjoint.json
+d-with-20260301	NFIX7Risk	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/disjoint.json
+d-without-20260301	NostalgiaForInfinityX7	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780	lab/pairlists/disjoint.json
+d-with-20260401	NFIX7Risk	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/disjoint.json
+d-without-20260401	NostalgiaForInfinityX7	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780	lab/pairlists/disjoint.json

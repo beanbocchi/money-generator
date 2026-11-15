@@ -1,0 +1,15 @@
+# universe-2 rerun without --timeframe-detail 1m.
+# A 272-pair run WITH 1m peaked at 11.54GB RSS against 0.70GB MemAvailable and was
+# OOM-killed 5 times across two attempts, always cutting off mid-log with no error.
+# Both arms drop 1m together, so the DELTA within universe 2 stays valid; only the
+# absolute tail figures get coarser, because exits are then evaluated on 5m bounds.
+# Kept separate from the u2- results and never compared arm-to-arm across universes,
+# since universe 1 has 1m detail and this does not.
+u3-with-20260501	NFIX7Risk	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u3-without-20260501	NostalgiaForInfinityX7	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--dry-run-wallet 780	lab/pairlists/343.json
+u3-with-20260604	NFIX7Risk	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u3-without-20260604	NostalgiaForInfinityX7	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--dry-run-wallet 780	lab/pairlists/343.json
+u3-with-20260301	NFIX7Risk	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u3-without-20260301	NostalgiaForInfinityX7	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--dry-run-wallet 780	lab/pairlists/343.json
+u3-with-20260401	NFIX7Risk	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u3-without-20260401	NostalgiaForInfinityX7	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--dry-run-wallet 780	lab/pairlists/343.json

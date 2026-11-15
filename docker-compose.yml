@@ -1,0 +1,119 @@
+---
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    container_name: bottrade
+    restart: unless-stopped
+    env_file:
+      - .env
+    # Loopback only (ADR-0012). Nothing needs the API from off-host: the watchdog uses
+    # the compose network, bin/status.sh uses localhost.
+    # For FreqUI from another machine: ssh -L 8989:127.0.0.1:8989 <this-host>
+    ports:
+      - "127.0.0.1:${FREQTRADE__API_SERVER__LISTEN_PORT:-8989}:${FREQTRADE__API_SERVER__LISTEN_PORT:-8989}"
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      # directory-level, never file-level: git replaces files by rename, and a
+      # single-file bind mount would keep serving the old inode
+      - ./NostalgiaForInfinity:/freqtrade/NostalgiaForInfinity:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FREQTRADE__API_SERVER__LISTEN_PORT:-8989}"]
+      interval: 90s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: >
+      trade
+      --config user_data/config.json
+      --db-url sqlite:////freqtrade/user_data/${FREQTRADE__BOT_NAME}_${FREQTRADE__EXCHANGE__NAME}_${FREQTRADE__TRADING_MODE}-tradesv3.sqlite
+      --log-file user_data/logs/bot.log
+
+  # The sqlite file is the only record of which real positions are open. Losing it does
+  # not lose money directly, but it loses the ability to reconcile with the exchange:
+  # freqtrade would come up believing it holds nothing while the account holds real
+  # futures positions. The old setup had dated snapshots; this project shipped without
+  # any until 2026-07-31.
+  dbbackup:
+    image: freqtradeorg/freqtrade:stable
+    container_name: bottrade-dbbackup
+    restart: unless-stopped
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: ["/bin/bash", "/backup.sh"]
+    environment:
+      - DB=/data/${FREQTRADE__BOT_NAME}_${FREQTRADE__EXCHANGE__NAME}_${FREQTRADE__TRADING_MODE}-tradesv3.sqlite
+      - EXTRA_FILES=/data/nfix7-profit_max-${FREQTRADE__BOT_NAME}-${FREQTRADE__EXCHANGE__NAME}-USDT.json
+      - OUT_DIR=/backups
+      - KEEP=${DB_BACKUP_KEEP:-30}
+      - INTERVAL=${DB_BACKUP_INTERVAL:-21600}
+    volumes:
+      - ./services/dbbackup/backup.sh:/backup.sh:ro
+      # read-only: a backup process has no business being able to write the live database
+      - ./user_data:/data:ro
+      - ./backups/db:/backups
+
+  # Breaks the ambiguity of silence. freqtrade's own Telegram reports trades, so a quiet
+  # day and a bot that died three days ago look identical. One /api/v1/health poll settles
+  # it: the API answers, the credentials work, and last_process_ts is recent.
+  watchdog:
+    image: freqtradeorg/freqtrade:stable
+    container_name: bottrade-watchdog
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/watch.sh"]
+    env_file:
+      - .env
+    environment:
+      - API=http://freqtrade:${FREQTRADE__API_SERVER__LISTEN_PORT:-8989}
+      - MAX_AGE=${WATCHDOG_MAX_AGE:-900}
+      - INTERVAL=${WATCHDOG_INTERVAL:-60}
+      # 15 polls, not 3. Restarts take a measured 301-331s and the updater triggers
+      # about 5 a day, so 3 polls paged 15 times in two days -- all false.
+      - FAILS_BEFORE_ALERT=${WATCHDOG_FAILS_BEFORE_ALERT:-15}
+      # A live loop with dead exchange credentials is a different failure with a
+      # different remedy, and /api/v1/health cannot see it. On 2026-08-05 the Binance
+      # key was rejected for 4h44m while health stayed 200 and the loop kept ticking.
+      - CREDS_CHECK_EVERY=${WATCHDOG_CREDS_CHECK_EVERY:-5}
+      - CREDS_FAILS_BEFORE_ALERT=${WATCHDOG_CREDS_FAILS_BEFORE_ALERT:-3}
+      # Repeat the page while still broken. One page per incident let the 2026-10-05 outage
+      # run 4.6 days on a single message.
+      - REALERT_EVERY=${WATCHDOG_REALERT_EVERY:-10800}
+    volumes:
+      - ./services/watchdog/watch.sh:/watch.sh:ro
+
+  updater:
+    build: ./services/updater
+    container_name: bottrade-updater
+    restart: unless-stopped
+    # Run as the host user that owns the clone, not root. As root, git refuses the
+    # bind-mounted repo ("detected dubious ownership in repository at '/nfi'") and
+    # every file it did write would come out root-owned, which then breaks
+    # bin/rollback.sh when you run it from the host. group_add is the docker group's
+    # GID, needed to reach the socket as a non-root user.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    group_add:
+      - "${DOCKER_GID:-968}"
+    env_file:
+      - .env
+    environment:
+      - HOME=/tmp
+      - NFI_DIR=/nfi
+      - STATE_DIR=/state
+      - TARGET_CONTAINER=${TARGET_CONTAINER:-bottrade}
+      - UPDATE_INTERVAL=${UPDATE_INTERVAL:-900}
+      - WATCH_PATHS=${WATCH_PATHS:-NostalgiaForInfinityX7.py configs/}
+      # Names match what update.sh reads, deliberately. An earlier revision mapped
+      # DRY_RUN=${UPDATER_DRY_RUN:-0}, which made `docker compose run -e
+      # UPDATER_DRY_RUN=1` silently ineffective: compose resolves the right-hand side
+      # from .env at parse time, so -e set a variable the script never reads and the
+      # "dry" run restarted the bot for real. One name, no indirection.
+      - DRY_RUN=${DRY_RUN:-0}
+      - RUN_ONCE=${RUN_ONCE:-0}
+      - STRATEGY_MODULE=${FREQTRADE__STRATEGY:-NFIX7Risk}
+      # The fuse (see services/updater/update.sh): risk-setting changes are held for
+      # bin/approve-update.sh; at most this many restarts per 24h; no restart while BTC's
+      # 30-minute range is at or above VOL_LIMIT_PCT (0 disables).
+      - MAX_RESTARTS_PER_DAY=${MAX_RESTARTS_PER_DAY:-4}
+      - VOL_LIMIT_PCT=${VOL_LIMIT_PCT:-2}
+    volumes:
+      - ./NostalgiaForInfinity:/nfi
+      - ./services/updater/state:/state
+      - /var/run/docker.sock:/var/run/docker.sock

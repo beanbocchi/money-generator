@@ -1,0 +1,10 @@
+# 343-pair universe, same version-split protocol as the 97-pair runs.
+# u2- prefix = universe 2, so names never collide with the existing results.
+u2-with-20260501	NFIX7Risk	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u2-without-20260501	NostalgiaForInfinityX7	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 	lab/pairlists/343.json
+u2-with-20260604	NFIX7Risk	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u2-without-20260604	NostalgiaForInfinityX7	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 	lab/pairlists/343.json
+u2-with-20260301	NFIX7Risk	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u2-without-20260301	NostalgiaForInfinityX7	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 	lab/pairlists/343.json
+u2-with-20260401	NFIX7Risk	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/343.json
+u2-without-20260401	NostalgiaForInfinityX7	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 	lab/pairlists/343.json

@@ -1,0 +1,8 @@
+stop55-20260501	NFIX7Stop55	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop55-20260604	NFIX7Stop55	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop85-20260501	NFIX7Stop85	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop85-20260604	NFIX7Stop85	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop40-20260501	NFIX7Stop40	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop40-20260604	NFIX7Stop40	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop70-20260501	NFIX7Stop70	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	
+stop70-20260604	NFIX7Stop70	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	

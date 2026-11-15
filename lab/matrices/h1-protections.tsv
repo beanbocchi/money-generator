@@ -1,0 +1,12 @@
+# H1 rerun with --enable-protections, which the first attempt omitted.
+# Backtesting skips protections unless told, so both arms ran without the overlay
+# and were necessarily identical. Delta 0.00 measured nothing.
+#
+# Only the "with" arms need rerunning: --enable-protections cannot change a strategy
+# that has no protections attribute. ctrl-without-20260301 verifies exactly that
+# assumption against the already-completed h1-without-20260301 (139.52).
+p1-with-20260301	NFIX7Risk	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections
+p1-with-20260401	NFIX7Risk	20260401-20260601	lab/strategies-20260401	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections
+p1-with-20260501	NFIX7Risk	20260501-20260701	lab/strategies-20260501	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections
+p1-with-20260604	NFIX7Risk	20260604-20260730	lab/strategies-20260604	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections
+ctrl-without-20260301	NostalgiaForInfinityX7	20260301-20260501	lab/strategies-20260301	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections

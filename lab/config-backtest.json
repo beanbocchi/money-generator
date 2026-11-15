@@ -1,0 +1,66 @@
+{
+  // Backtest-only overrides. Layered ON TOP of upstream's trading_mode-futures.json
+  // and exampleconfig.json, which supply timeframe, order types and pricing.
+  //
+  // These values reproduce the LIVE settings during 2026-02-28..2026-07-15, which are
+  // NOT the settings the bot runs today. Read from the live trade database:
+  //   - leverage 3.0 on 209 of 210 trades (the cut to 2.0 only took effect 2026-07-30)
+  //   - peak concurrency 5, median stake 2.49 early on
+  //     => 4 slots at ratio 0.99 implies a starting balance of 2.49*4/0.99 = 10.06
+  // Backtesting today's 12-slot / 0.90 / 2x config against this period would answer a
+  // question nobody asked.
+
+  // Fixed stake against a large wallet, NOT the live "unlimited" sizing. The first
+  // validation run used unlimited stake on a 10 USDT wallet and returned 431 trades,
+  // 431 wins, zero losses and +47868%: starting small with unlimited sizing creates a
+  // compounding feedback loop, because early profit buys the grind capital that then
+  // prevents losses, which compounds further. The wallet ran 10 -> 4796 USDT and the
+  // last months were a different strategy than the first.
+  //
+  // A fixed stake against a wallet it cannot materially grow means every trade faces
+  // the same capital regime, so summed P&L is comparable across configurations. That is
+  // the point of the rig: comparing two configs, not projecting an account balance.
+  //
+  // Consequence, stated plainly: this measures how NFI behaves when properly
+  // capitalised. That is the regime the live bot entered on 2026-07-30, but it is NOT
+  // the regime that produced the 208-trade history -- live ground only 1 trade in 208
+  // while capital-starved, then ground trade #91 to 16.76x its stake once capital
+  // existed. "Does the backtest reproduce the live history" is therefore not a
+  // meaningful question and is not asked.
+  "max_open_trades": 4,
+  "stake_amount": 100,
+  "tradable_balance_ratio": 0.99,
+  "dry_run": true,
+  "dry_run_wallet": 10000,
+
+  "nfi_parameters": {
+    "futures_mode_leverage": 3.0,
+    "futures_mode_leverage_rebuy_mode": 3.0,
+    "futures_mode_leverage_grind_mode": 3.0
+  },
+
+  // Upstream's exampleconfig.json sets use_order_book false, which makes freqtrade
+  // demand ticker pricing -- and Binance futures declares tickers_have_price false, so
+  // validate_pricing() aborts with "Ticker pricing not available for Binance". This is
+  // why upstream's own backtest recipe works: docker-compose.tests.yml defaults to
+  // TRADING_MODE=spot. Flipping the flag is behaviourally inert in a backtest, where
+  // fills come from candle prices and no order book is ever consulted; it only gets
+  // past validation.
+  "entry_pricing": { "use_order_book": true, "order_book_top": 1 },
+  "exit_pricing": { "use_order_book": true, "order_book_top": 1 },
+
+  // No telegram or api_server block on purpose. Neither is configured by upstream's
+  // configs, so a backtest already has no way to reach the outside world. Adding
+  // {"enabled": false} for belt and braces is actively harmful: freqtrade's schema
+  // validates the object once it exists and rejects it with "'token' is a required
+  // property", so the safety blanket stops the backtest from running at all.
+
+  // Upstream's exampleconfig.json ships exchange.name as an empty string, and live gets
+  // it from FREQTRADE__EXCHANGE__NAME -- which a backtest has no .env to read. Without
+  // this, freqtrade aborts with "This command requires a configured exchange".
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": ""
+  }
+}

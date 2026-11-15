@@ -1,0 +1,43 @@
+{
+  // H7: does account size change the failure mode in kind, not degree?
+  //
+  // Holds the LIVE geometry as it exists after 2026-07-30 -- 12 slots, ratio 0.90,
+  // unlimited stake, leverage 2.0 -- and sweeps only dry_run_wallet via
+  // --dry-run-wallet on the command line. The geometry is scale-invariant: at any
+  // wallet W each slot gets 0.90*W/12 = 0.075W and free capital is 0.10W, a
+  // free-to-stake ratio of 1.33, which matches live (267 USDT, ~20 stake, ~27 free).
+  //
+  // Deliberately NOT the historical settings (4 slots, 0.99, leverage 3.0). H7 asks
+  // about the bot as it is now, because that is the thing carrying money. The 208
+  // historical trades were produced by different settings AND a capital level where
+  // grinding almost never fired -- 1 trade in 208, against 24 of 450 in a
+  // well-capitalised backtest.
+  //
+  // What makes this worth running rather than tuning: with a 10000 wallet the backtest
+  // returned 450 trades and zero losses, because the only two positions that fell more
+  // than 20% below their first entry were ground to 31.9x and 28.4x stake and exited
+  // positive. Live, capital-starved, took 12 doom losses instead. If losses appear only
+  // below some wallet size, then the forward risk profile is rarer but much larger
+  // failures, each involving a position ground to 10-30x the base stake.
+
+  "max_open_trades": 12,
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.90,
+  "dry_run": true,
+  "dry_run_wallet": 270,
+
+  "nfi_parameters": {
+    "futures_mode_leverage": 2.0,
+    "futures_mode_leverage_rebuy_mode": 2.0,
+    "futures_mode_leverage_grind_mode": 2.0
+  },
+
+  // Both needed only to get past validation; see lab/config-backtest.json for why.
+  "entry_pricing": { "use_order_book": true, "order_book_top": 1 },
+  "exit_pricing": { "use_order_book": true, "order_book_top": 1 },
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": ""
+  }
+}

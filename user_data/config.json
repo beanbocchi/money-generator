@@ -1,0 +1,73 @@
+{
+  "add_config_files": [
+    "../NostalgiaForInfinity/configs/trading_mode-futures.json",
+    "../NostalgiaForInfinity/configs/pairlist-volume-binance-usdt.json",
+    "../NostalgiaForInfinity/configs/blacklist-binance.json",
+    "../NostalgiaForInfinity/configs/exampleconfig.json",
+    "../NostalgiaForInfinity/configs/exampleconfig_secret.json"
+  ],
+
+  // Keys below override the files above (main config wins in deep_merge_dicts).
+  // Risk settings live HERE so that pulling upstream never clobbers them.
+  // Each decision below has a record in docs/adr/accepted/ with its evidence.
+
+  // 0.90 rather than 0.99 leaves headroom for NFI's grind mode, which can demand
+  // several times a slot's stake. Grinding fires on 30-37% of trades at every wallet
+  // size tested (ADR-0015), so the headroom is in routine use.
+  //
+  // An earlier version of this comment cited 0 of 194 trades grinding at a 40 USDT
+  // wallet against 29 of 199 at 270, and concluded that NFI's risk mechanism switches
+  // off below some capital level. Retracted 2026-08-13: the detector compared peak
+  // stake against final stake, which differ only when a position partially exits after
+  // growing. Recounted from entry orders the figures are 58/194 and 73/199, and no gate
+  // exists. The -16.6% versus +0.7% account figures are still measured, but they now
+  // have no mechanism behind them, and each rests on 1 to 3 loss events with an
+  // interval that includes zero at 270.
+  //
+  // What this ratio caps is how much of the wallet can sit deployed at once, and H8
+  // measured that: across 32 backtests the median peak is 85.8% of wallet held as
+  // margin, 85.9% at wallet 780 on live geometry, with all 12 slots full and every
+  // position long. Live has reached 68%, on 2026-08-22. The configuration runs close
+  // to this ceiling.
+  //
+  // The geometry is scale-invariant, so this number does not change with deposits:
+  // at any wallet W each slot gets 0.90*W/12 and free capital is 0.10*W, a
+  // free-to-stake ratio of 1.33.
+  //
+  // Second deposit landed 2026-08-05, ~282 -> ~782 USDT. 12 slots now gives a
+  // ~58.65 USDT stake. Note this retires the original reason for choosing 12:
+  // at 267 the stake was ~20 and BTC/USDT (minNotional 50, so min stake 25 at 2x)
+  // was only tradeable via freqtrade's top-up when the gap is <=30%. At 782 the
+  // stake clears every pair outright, so slot count is now a free choice rather
+  // than one forced by exchange minimums. It is left at 12 deliberately: every
+  // parameter change tested against the live history landed inside noise, so there
+  // is no measured reason to move it.
+  "tradable_balance_ratio": 0.90,
+
+  // Was 3.0. At 3x a -33% adverse move wipes the trade's margin, and NFI's doom
+  // stop (0.20) can be gapped straight through on a 5m alt candle -- that is how
+  // trades #52 and #13 reached liquidation. 2x doubles the gap headroom and scales
+  // realised P&L down by ~1/3. Revert to 3.0 to undo.
+  "nfi_parameters": {
+    "futures_mode_leverage": 2.0,
+    "futures_mode_leverage_rebuy_mode": 2.0,
+    "futures_mode_leverage_grind_mode": 2.0
+  },
+
+  // Per-pair cooldown after a pair has repeatedly hurt the account. It is declared
+  // on the strategy class in strategies/NFIX7Risk.py, not here: this freqtrade
+  // version hard-rejects "protections" in the config file.
+  // Pinned here rather than inherited: upstream sets "running" too, but this is the
+  // switch for pausing. Entries were paused 2026-10-30..11-05 during the Binance hack;
+  // "paused" blocks new entries AND grinding add-ons but still lets NFI take profit,
+  // derisk and exit. An API /stopentry alone is lost on the next restart, so to pause
+  // durably set "paused" here AND call /stopentry (no restart needed). /start resumes.
+  "initial_state": "running",
+
+  // Was true via upstream's exampleconfig. It lets anyone holding the API password open
+  // positions through the REST API / Telegram. Nothing in this setup needs manual
+  // entries.
+  "force_entry_enable": false,
+
+  "strategy": "NFIX7Risk"
+}
