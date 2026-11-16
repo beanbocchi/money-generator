@@ -71,7 +71,7 @@ original wording under an "Original record" heading.
 
 | ADR | Title | Status | Date |
 |---|---|---|---|
-| [ADR-0020](proposed/0020-h9-exchange-hard-stop.md) | H9: a hard stop NFI cannot veto | proposed; pre-registered, queue stopped during its first run on 2026-10-30, no results | 2026-10-30 |
+| [ADR-0020](proposed/0020-h9-exchange-hard-stop.md) | H9: a hard stop NFI cannot veto | proposed; rule accepts 0.55 and 0.70 (2026-11-16), not deployed | 2026-10-30 |
 | [ADR-0021](proposed/0021-h2-tighter-hard-stop.md) | H2: a tighter hard stoploss | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0022](proposed/0022-h3-portfolio-drawdown-halt.md) | H3: a portfolio-level drawdown halt | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0023](proposed/0023-h4-breadth-entry-gate.md) | H4: an altcoin-breadth entry gate | proposed; pre-registered, never run | 2026-07-30 |

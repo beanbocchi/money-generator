@@ -1,6 +1,6 @@
 # ADR-0020: H9: a hard stop NFI cannot veto
 
-- Status: proposed; pre-registered, rerun started 2026-11-15 with fresh baselines (see Deviation)
+- Status: proposed; results in 2026-11-16, the rule accepts 0.55 and 0.70; not deployed, awaiting the owner
 - Date: 2026-10-30
 - Lab: `lab/matrices/h9-stop.tsv`, `lab/strategies-20260501/NFIX7Stop.py`, `lab/strategies-20260604/NFIX7Stop.py`, report `lab/h9.py`
 - Run: `nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &`, then `python3 lab/h9.py`
@@ -123,3 +123,54 @@ baseline nearly liquidated. If anything is accepted it is 0.70 or 0.85.
 
 Eight runs at ~54 minutes, serial (two concurrent runs do not fit in memory). Runs carry
 `--oom-score-adj 1000` so the kernel kills a backtest before the live bot.
+
+## Results (2026-11-16)
+
+All ten runs finished 2026-11-16 00:38 UTC (`lab/logs/queue-h9-stop.log`), report from
+`python3 lab/h9.py`. The consistency check held for every arm.
+
+| window | arm | account total | bound | worst closed | stop fills | saved / cost / unmatched | underwater at cutoff | verdict |
+|---|---|---|---|---|---|---|---|---|
+| 20260501 | baseline | +92.95 | | -66.58 | | | 6 (-227.18) | |
+| | stop40 | +0.92 | +83.65 | -29.38 | 18 (-425.35) | 8 / 9 / 1 | 1 (+2.28) | not acceptable |
+| | stop55 | +109.83 | | -37.20 | 11 (-341.05) | 7 / 3 / 1 | 1 (-14.12) | acceptable |
+| | stop70 | +166.38 | | -53.55 | 6 (-232.22) | 5 / 1 / 0 | 3 (-77.28) | acceptable |
+| | stop85 | +185.88 | | -67.34 | 4 (-183.38) | 4 / 0 / 0 | 4 (-102.09) | not acceptable (worst loss) |
+| 20260604 | baseline | +123.73 | | -85.39 | | | 5 (-206.89) | |
+| | stop40 | +19.79 | +111.36 | -29.73 | 16 (-374.12) | 5 / 11 / 0 | 1 (-4.84) | not acceptable |
+| | stop55 | +142.56 | | -37.41 | 8 (-261.83) | 4 / 4 / 0 | 2 (-21.79) | acceptable |
+| | stop70 | +145.48 | | -45.04 | 6 (-231.45) | 3 / 3 / 0 | 3 (-54.71) | acceptable |
+| | stop85 | +206.09 | | -48.95 | 4 (-178.93) | 3 / 1 / 0 | 3 (-59.00) | acceptable |
+
+Bounds are 90% of each rerun baseline's account total. stop85 failed the 20260501 window
+by 0.76 USDT on worst closed loss (-67.34 against -66.58): its PLAY stop filled at -67.34.
+
+By the rule, 0.55 and 0.70 are acceptable in both windows and adjacent, so both are
+accepted, and the recommendation is the tightest: **0.55 of margin**, a 27.5% adverse
+move from the first entry at 2x.
+
+### Prediction against outcome
+
+- 0.40 costs materially: right. It cut the account total by 92 and 104 USDT, and 20 of
+  its 34 fills were cost.
+- "If anything is accepted it is 0.70 or 0.85": half right. 0.70 is accepted, 0.85
+  missed one window by 0.76 USDT, and 0.55 was not expected to pass.
+
+### Reading it carefully
+
+- Every stop level from 0.55 up beat its baseline's account total in both windows.
+  Most of that gap is the baselines' positions underwater at the cutoff (-227 and -207),
+  marked to market at an arbitrary date. Some of them could have recovered after it. The
+  rule uses account total by design (ADR-0006 rule 3), and the gap is recorded so it is
+  not read as the stop making money.
+- 0.70 had the higher total in both windows. The rule picks the tightest accepted level;
+  choosing 0.70 instead is the owner's call, and it was not the registered rule.
+- The limits listed before the run still hold: two windows, both before the 2x era, no
+  market-wide crash like 2026-10-29, and backtest stops fill without slippage.
+
+## Before deployment
+
+Deploying changes live money and needs the owner's approval. A static stop pins to each
+trade's first entry, so open positions that have already moved past 27.5% from their
+first entry would be stopped at once. That list must be checked against the open trades
+on the day, and the owner decides whether those positions get the stop.
