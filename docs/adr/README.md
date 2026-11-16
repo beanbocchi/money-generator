@@ -77,4 +77,4 @@ original wording under an "Original record" heading.
 | [ADR-0023](proposed/0023-h4-breadth-entry-gate.md) | H4: an altcoin-breadth entry gate | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0024](proposed/0024-h5-volatility-scaled-exposure.md) | H5: exposure scaled by volatility regime | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0025](proposed/0025-h6-pair-age-filter.md) | H6: a longer minimum pair age | proposed; pre-registered, never run | 2026-07-30 |
-| [ADR-0027](proposed/0027-llm-event-gate-shadow.md) | An LLM news-event entry gate, run in shadow first | proposed; shadow period running to 2027-02-08 | 2026-11-16 |
+| [ADR-0027](proposed/0027-llm-event-gate-shadow.md) | An LLM news-event entry gate, run in shadow first | proposed; shadow period on gpt-6.1-sol, runs to 2027-02-08 | 2026-11-16 |

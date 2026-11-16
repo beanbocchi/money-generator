@@ -1,6 +1,6 @@
 # ADR-0027: An LLM news-event entry gate, run in shadow first
 
-- Status: proposed; shadow period running 2026-11-16 to 2027-02-08
+- Status: proposed; shadow period restarted on gpt-6.1-sol 2026-11-16, runs to 2027-02-08 (see Deviation)
 - Date: 2026-11-16
 - Code: `services/newsgate/newsgate.py` (self-test with `--self-test`), `bin/newsgate.sh`
 - Tests: `tests/test_newsgate.sh`
@@ -145,3 +145,31 @@ the first observation; it counts towards (a) like any other.
 
 The proxy's usage figures are not real token counts (the first call reported 2 input
 tokens for 20 headlines), so measurement 4 records calls and latency only.
+
+## Deviation (2026-11-16, one hour into the shadow period)
+
+The owner asked for an OpenAI model in place of Claude. The gate now calls
+`gpt-6.1-sol` through the same proxy with the `openai` SDK (pinned 3.40.0) and a strict
+JSON schema. The proxy key is unchanged and is now read from `NEWSGATE_PROXY_KEY`, with
+`NEWSGATE_BASE_URL` defaulting to `http://127.0.0.1:8317/v1`.
+
+A model change mid-period would mix two classifiers in one sample, so the shadow
+period restarts. The Claude hour is kept in `services/newsgate/state/claude-20261116/`
+and is not counted. Its one window (ASTER) does not count towards (a).
+
+The first GPT cycle, on the same 21 headlines, put the Coinone customer-data breach at
+`MARKET` severity 2, which would have gated every pair for 24 hours. The prompt's
+definition of `MARKET` was narrowed to Binance or a top-five exchange halting or being
+hacked, a USDT or USDC depeg, or a trading ban in a major economy. That cycle's log is
+kept in `services/newsgate/state/build-gpt-20261116/` and is not counted either. The
+change was made before the restarted period began and the prompt is fixed from here.
+
+On the rerun GPT rated the ASTER headline severity 0 ("a price plunge and unspecified
+suspicion of foul play do not establish a hack or exploit"), where Claude gave it 2.
+
+The restarted period's first decision was logged 2026-11-16 06:41:39 UTC, so the 84
+days end 2027-02-08 06:41 UTC. The decision rule is unchanged.
+
+Token counts from the proxy are real for this model: the first call read 1,870 input
+tokens and wrote 897 output tokens for 21 headlines. A call with one headline is about
+1,100 input tokens, most of it the fixed prompt and schema.

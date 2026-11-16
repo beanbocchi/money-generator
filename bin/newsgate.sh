@@ -5,9 +5,9 @@
 #
 # Usage:  bin/newsgate.sh start | stop | once | logs | windows
 #
-# Calls Claude through the local proxy on 127.0.0.1:8317, hence --network host. The
-# token comes from NEWSGATE_ANTHROPIC_AUTH_TOKEN in .env and is passed by name, so it
-# never appears in `ps` or `docker inspect` argv.
+# Calls an OpenAI model through the local proxy on 127.0.0.1:8317, hence --network host.
+# The key comes from NEWSGATE_PROXY_KEY in .env and is passed by name, so it never
+# appears in `ps` or `docker inspect` argv.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,13 +17,13 @@ STATE=services/newsgate/state
 mkdir -p "$STATE"
 
 run() {
-  TOKEN=$(grep -E '^NEWSGATE_ANTHROPIC_AUTH_TOKEN=' .env | cut -d= -f2- || true)
-  [ -n "$TOKEN" ] || { echo "NEWSGATE_ANTHROPIC_AUTH_TOKEN is not set in .env"; exit 2; }
-  BASE=$(grep -E '^NEWSGATE_ANTHROPIC_BASE_URL=' .env | cut -d= -f2- || true)
-  export ANTHROPIC_AUTH_TOKEN="$TOKEN" ANTHROPIC_BASE_URL="${BASE:-http://127.0.0.1:8317}"
+  KEY=$(grep -E '^NEWSGATE_PROXY_KEY=' .env | cut -d= -f2- || true)
+  [ -n "$KEY" ] || { echo "NEWSGATE_PROXY_KEY is not set in .env"; exit 2; }
+  BASE=$(grep -E '^NEWSGATE_BASE_URL=' .env | cut -d= -f2- || true)
+  export NEWSGATE_PROXY_KEY="$KEY" NEWSGATE_BASE_URL="${BASE:-http://127.0.0.1:8317/v1}"
   docker build -q -t "$IMAGE" services/newsgate >/dev/null
   docker run "$@" --network host -u "$(id -u):$(id -g)" \
-    -e ANTHROPIC_AUTH_TOKEN -e ANTHROPIC_BASE_URL \
+    -e NEWSGATE_PROXY_KEY -e NEWSGATE_BASE_URL \
     -v "$PWD/$STATE:/state" "$IMAGE" ${ARGS:-}
 }
 

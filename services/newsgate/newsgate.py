@@ -1,7 +1,7 @@
 """ADR-0027: an LLM news-event gate, shadow mode.
 
 Every CYCLE seconds: fetch Binance announcements and a few crypto RSS feeds, send the
-new headlines to Claude for classification, and append every item, decision and
+new headlines to an OpenAI model for classification, and append every item, decision and
 would-block window to STATE/log.jsonl. Nothing here talks to the bot. Accepting the
 gate and wiring it into NFIX7Risk is a later, separate change.
 
@@ -21,7 +21,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
-MODEL = "claude-opus-5-5"
+MODEL = "gpt-6.1-sol"
 CYCLE = 300
 WINDOW_HOURS = 24
 BLOCK_SEVERITY = 2
@@ -54,8 +54,11 @@ listings, launches, partnerships, ETF flows and macro news are event_type "none"
 
 For each item return:
 - event_type: one of exploit, hack, depeg, delisting, regulatory, exchange_incident, none
-- scope: TICKERS if specific coins are affected, MARKET if the whole crypto market or a
-  major exchange's operations are affected, NONE otherwise
+- scope: TICKERS if specific coins are affected. MARKET only for an event that hits
+  trading across the whole market: Binance halting withdrawals or trading, a hack or
+  insolvency at Binance or another top-five exchange, a depeg of USDT or USDC, or a
+  ban on crypto trading in a major economy. A breach of customer data, phishing, or an
+  incident at a smaller exchange or a mining pool is not MARKET. NONE otherwise.
 - tickers: base tickers of the coins directly affected, uppercase, e.g. ["ZEC"]. Empty
   unless scope is TICKERS. Name a coin only if the headline makes it the victim.
 - severity: 0 no event, 1 minor or already resolved, 2 a real ongoing negative event for
@@ -158,45 +161,32 @@ def fetch_all(get=http_get):
 # ------------------------------------------------------------------ classification
 
 class Classifier:
-    """Wraps the Claude call. The client is injected so the self-test can fake it."""
+    """Wraps the model call. The client is injected so the self-test can fake it."""
 
     def __init__(self, client):
         self.client = client
-        self.use_fallbacks = True   # dropped for good if the proxy rejects the beta
-
-    def _request(self, items):
-        lines = "\n".join(
-            f'<item id="{i}" source="{it["source"]}" published="{it["published"]}">'
-            f'{it["title"]}</item>' for i, it in enumerate(items))
-        kw = dict(
-            model=MODEL, max_tokens=16000, system=SYSTEM,
-            output_config={"effort": "low",
-                           "format": {"type": "json_schema", "schema": SCHEMA}},
-            messages=[{"role": "user", "content": f"<headlines>\n{lines}\n</headlines>"}],
-        )
-        if self.use_fallbacks:
-            return self.client.beta.messages.create(
-                betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kw)
-        return self.client.messages.create(**kw)
 
     def classify(self, items):
         """Returns (results by item index, response meta). Raises on API failure."""
-        import anthropic
-        try:
-            resp = self._request(items)
-        except anthropic.BadRequestError as e:
-            if not self.use_fallbacks:
-                raise
-            log({"kind": "note", "msg": f"fallbacks rejected, retrying without: {e.message[:200]}"})
-            self.use_fallbacks = False
-            resp = self._request(items)
-        meta = {"stop_reason": resp.stop_reason, "model": resp.model,
-                "input_tokens": resp.usage.input_tokens,
-                "output_tokens": resp.usage.output_tokens}
-        if resp.stop_reason != "end_turn":
+        lines = "\n".join(
+            f'<item id="{i}" source="{it["source"]}" published="{it["published"]}">'
+            f'{it["title"]}</item>' for i, it in enumerate(items))
+        resp = self.client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "system", "content": SYSTEM},
+                      {"role": "user", "content": f"<headlines>\n{lines}\n</headlines>"}],
+            response_format={"type": "json_schema", "json_schema": {
+                "name": "headline_events", "strict": True, "schema": SCHEMA}},
+        )
+        choice = resp.choices[0]
+        u = resp.usage
+        meta = {"finish_reason": choice.finish_reason, "model": resp.model,
+                "input_tokens": u.prompt_tokens if u else None,
+                "output_tokens": u.completion_tokens if u else None}
+        if choice.finish_reason != "stop" or choice.message.refusal or not choice.message.content:
+            meta["refusal"] = choice.message.refusal
             return None, meta
-        text = next(b.text for b in resp.content if b.type == "text")
-        return validate(json.loads(text), len(items)), meta
+        return validate(json.loads(choice.message.content), len(items)), meta
 
 
 def validate(data, n):
@@ -303,10 +293,10 @@ def main():
     once = "--once" in sys.argv
     if "--self-test" in sys.argv:
         sys.exit(0 if _self_test() else 1)
-    import anthropic
+    from openai import OpenAI
     os.makedirs(STATE, exist_ok=True)
-    # Credentials and base URL come from ANTHROPIC_AUTH_TOKEN / ANTHROPIC_BASE_URL.
-    classifier = Classifier(anthropic.Anthropic(timeout=120.0))
+    classifier = Classifier(OpenAI(base_url=os.environ["NEWSGATE_BASE_URL"],
+                                   api_key=os.environ["NEWSGATE_PROXY_KEY"], timeout=120.0))
     log({"kind": "start", "model": MODEL, "cycle": CYCLE})
     while True:
         started = time.monotonic()
@@ -398,7 +388,7 @@ def _self_test():
                 else:
                     res[i] = {"id": str(i), "event_type": "none", "scope": "NONE",
                               "tickers": [], "severity": 0, "reason": "noise"}
-            return res, {"stop_reason": "end_turn", "model": MODEL,
+            return res, {"finish_reason": "stop", "model": MODEL,
                          "input_tokens": 1, "output_tokens": 1}
 
     clock = lambda: t0
@@ -421,6 +411,36 @@ def _self_test():
     ck(any(r["kind"] == "api_error" for r in recs) and any(r["kind"] == "fetch_error" for r in recs),
        "outages and feed errors are logged, so gaps are visible")
     ck(sum(r["kind"] == "cycle" for r in recs) == 2, "every cycle leaves a heartbeat line")
+
+    from types import SimpleNamespace as NS
+
+    class FakeOpenAI:
+        def __init__(self, content, finish="stop", refusal=None):
+            msg = NS(content=content, refusal=refusal)
+            self.resp = NS(choices=[NS(finish_reason=finish, message=msg)], model=MODEL,
+                           usage=NS(prompt_tokens=10, completion_tokens=5))
+            self.chat = NS(completions=NS(create=self.create))
+            self.kw = None
+
+        def create(self, **kw):
+            self.kw = kw
+            return self.resp
+
+    two = [{"source": "s", "published": iso(t0), "title": "A"},
+           {"source": "s", "published": iso(t0), "title": "B"}]
+    fo = FakeOpenAI(json.dumps({"results": [
+        {"id": "1", "event_type": "depeg", "scope": "TICKERS", "tickers": ["usde"],
+         "severity": 3, "reason": "r"}]}))
+    res, meta = Classifier(fo).classify(two)
+    ck(list(res) == [1] and res[1]["tickers"] == ["USDE"] and meta["input_tokens"] == 10,
+       "classifier parses the structured reply and keeps token counts")
+    rf = fo.kw["response_format"]
+    ck(rf["type"] == "json_schema" and rf["json_schema"]["strict"] is True
+       and fo.kw["model"] == MODEL, "request asks for the strict schema on MODEL")
+    ck(Classifier(FakeOpenAI(None, refusal="no")).classify(two)[0] is None,
+       "a refusal yields no result")
+    ck(Classifier(FakeOpenAI('{"res', finish="length")).classify(two)[0] is None,
+       "a truncated reply yields no result")
 
     print(f"self-test failed={fails}")
     return fails == 0
