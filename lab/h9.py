@@ -14,7 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analyze import bootstrap_net  # noqa: E402
 
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
-WINDOWS = {"20260501": "p1-with-20260501", "20260604": "p1-with-20260604"}
+# Rerun baselines, not p1-with-*: Binance delisted EPIC, STG and STORJ after those ran, so
+# the old baselines trade pairs the arms cannot (see ADR-0020 "Deviation").
+WINDOWS = {"20260501": "base-20260501", "20260604": "base-20260604"}
 LEVELS = ["40", "55", "70", "85"]
 STOP_EXITS = ("stop_loss", "stoploss_on_exchange")
 

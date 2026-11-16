@@ -1,9 +1,20 @@
 # ADR-0020: H9: a hard stop NFI cannot veto
 
-- Status: proposed; pre-registered, queue stopped during its first run on 2026-10-30, no results
+- Status: proposed; pre-registered, rerun started 2026-11-15 with fresh baselines (see Deviation)
 - Date: 2026-10-30
 - Lab: `lab/matrices/h9-stop.tsv`, `lab/strategies-20260501/NFIX7Stop.py`, `lab/strategies-20260604/NFIX7Stop.py`, report `lab/h9.py`
 - Run: `nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &`, then `python3 lab/h9.py`
+
+## Deviation (2026-11-15, before any arm result)
+
+The pre-registered baselines `p1-with-*` ran on 2026-07-30. Since then Binance delisted
+EPIC, STG and STORJ, and freqtrade drops inactive markets from the whitelist, so every new
+arm runs on a smaller universe than those baselines. `p1-with-20260501` traded STG. The
+built-in consistency check would fail for that reason alone. The baselines are rerun
+under the same image (built 2026-07-30), config and data as `base-20260501` and
+`base-20260604`, and `lab/h9.py` compares against those. The decision rule's bound was
+already relative (10% below the baseline's account total), so the absolute figures
+104.19 and 127.86 below no longer apply; the rerun baselines set the bound.
 
 ## Original record
 
