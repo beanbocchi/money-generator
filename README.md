@@ -12,10 +12,10 @@ Decisions and their evidence: `docs/adr/README.md`. Original design:
   risk overlay), the trade database, logs.
 - `NostalgiaForInfinity/` is upstream. A gitignored partial clone that only the updater
   writes to; local edits there are destroyed by `git reset --hard`.
-- `services/` holds the three sidecars described under "What runs": `updater/`
+- `services/` holds the sidecars described under "What runs": `updater/`
   (`update.sh`, with the Telegram approval buttons in `approval.sh`), `watchdog/`,
-  `dbbackup/`.
-- `bin/` holds the host scripts: `status.sh`, `approve-update.sh`, `rollback.sh`,
+  `dbbackup/`, and `newsgate/`, which runs outside the compose stack.
+- `bin/` holds the host scripts: `status.sh`, `approve-update.sh`, `rollback.sh`, `newsgate.sh`,
   `setup.sh`. Each runs from any directory.
 - `backups/db/` receives the 6-hourly database snapshots (gitignored).
 - `docs/adr/` records every risk decision and lab hypothesis, filed by status:
@@ -55,6 +55,7 @@ against an empty database and loses track of open positions.
 | `bottrade-updater` | pulls upstream NFI, restarts the bot behind an import guard |
 | `bottrade-watchdog` | polls `/api/v1/health`; alerts to Telegram if the bot stops responding or its loop stalls |
 | `bottrade-dbbackup` | consistent sqlite snapshots every 6h into `backups/db/`, keeps 30 |
+| `bottrade-newsgate` | ADR-0027's shadow news gate. Not part of the compose stack; started with `bin/newsgate.sh start`, never talks to the bot |
 
 The watchdog exists because freqtrade's own Telegram only reports trades, so silence is
 ambiguous -- "no signals today" and "died three days ago" look the same. It answers one

@@ -9,6 +9,7 @@
 
 # updater runtime state
 /services/updater/state/
+/services/newsgate/state/
 
 # live trading state
 user_data/*.sqlite

@@ -17,6 +17,7 @@ must_ignore .env
 must_ignore NostalgiaForInfinity/
 must_ignore backups/db/20261115T025359Z/tradesv3.sqlite
 must_ignore services/updater/state/previous_sha
+must_ignore services/newsgate/state/log.jsonl
 must_ignore user_data/khoakomlem_binance_futures-tradesv3.sqlite
 must_ignore user_data/logs/bot.log
 must_ignore user_data/data/
