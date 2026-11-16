@@ -27,6 +27,7 @@ __pycache__/
 
 # backtest lab: candles, results and logs are bulk and regenerable
 /lab/data/
+/lab/data-tsmom/
 /lab/results/
 /lab/logs/
 /lab/*.log

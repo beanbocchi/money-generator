@@ -20,6 +20,9 @@ hypotheses for real.
 - `queue.sh` runs a matrix of backtests one at a time, skips runs whose result already
   exists, and logs to `lab/logs/queue-<matrix>.log`.
 - `analyze.py` reports on result archives; `h9.py` is the pre-registered H9 report.
+- `tsmom.py` and `tsmom.sh` are ADR-0026's trend baseline on BTC and ETH: a pandas
+  backtest with its own data in `lab/data-tsmom/`, small enough to run beside an NFI
+  backtest.
 - Pre-registrations, results and retractions are ADRs in `docs/adr/`, filed under
   `proposed/`, `accepted/` or `rejected/`.
 - `matrices/` has one TSV per experiment, named after its hypothesis or result prefix

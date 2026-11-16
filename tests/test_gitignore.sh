@@ -28,6 +28,7 @@ must_track user_data/config.json
 must_track user_data/strategies/NFIX7Risk.py
 must_track services/updater/update.sh
 must_ignore lab/data/
+must_ignore lab/data-tsmom/
 must_ignore lab/strategies-20260501/NostalgiaForInfinityX7.py
 must_track lab/strategies-20260501/NFIX7Stop.py
 must_track lab/matrices/h9-stop.tsv

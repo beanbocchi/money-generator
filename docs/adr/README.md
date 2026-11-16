@@ -65,6 +65,7 @@ original wording under an "Original record" heading.
 | [ADR-0017](rejected/0017-h8-deployed-margin-ceiling.md) | H8: cap concurrent deployed margin | rejected (measurement accepted, ceiling rejected) | 2026-10-05 |
 | [ADR-0018](rejected/0018-leverage-3x.md) | Raise leverage to 3x | rejected | 2026-10-30 |
 | [ADR-0019](rejected/0019-llm-entry-exit-layer.md) | An LLM entry or exit layer | rejected (not testable on this rig) | 2026-07-30 |
+| [ADR-0026](rejected/0026-tsmom-baseline.md) | A volatility-targeted trend baseline on BTC and ETH perps | rejected (no side met the plateau rule) | 2026-11-16 |
 
 ## Proposed
 
