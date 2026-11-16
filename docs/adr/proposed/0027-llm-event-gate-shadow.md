@@ -173,3 +173,16 @@ days end 2027-02-08 06:41 UTC. The decision rule is unchanged.
 Token counts from the proxy are real for this model: the first call read 1,870 input
 tokens and wrote 897 output tokens for 21 headlines. A call with one headline is about
 1,100 input tokens, most of it the fixed prompt and schema.
+
+## Amendment (2026-11-16, before any counted window)
+
+One event reported by several feeds opens one window per headline, because items are
+deduplicated by feed id, not by story. Left as registered, criterion (a) would count a
+story three times if three outlets ran it. From here, windows on the same target whose
+spans overlap are merged into one event before (a), (b) and (d) are read. The merged
+event starts at its earliest decided time, which is when the gate could first have
+acted. The log keeps every window as written.
+
+No prompt cache applies. The fixed prompt and schema are about 834 tokens on
+`gpt-6.1-sol`, under the 1,024-token minimum for automatic caching. Five test calls on
+2026-11-16 reported 0 cached tokens, with and without `prompt_cache_key`.
