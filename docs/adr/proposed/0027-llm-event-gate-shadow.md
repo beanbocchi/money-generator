@@ -1,6 +1,6 @@
 # ADR-0027: An LLM news-event entry gate, run in shadow first
 
-- Status: proposed; shadow period restarted on gpt-6.1-sol 2026-11-16, runs to 2027-02-08 (see Deviation)
+- Status: proposed; shadow period restarted 2026-11-18 on a revised prompt, runs to 2027-02-10 (see second deviation)
 - Date: 2026-11-16
 - Code: `services/newsgate/newsgate.py` (self-test with `--self-test`), `bin/newsgate.sh`
 - Tests: `tests/test_newsgate.sh`
@@ -186,3 +186,43 @@ acted. The log keeps every window as written.
 No prompt cache applies. The fixed prompt and schema are about 834 tokens on
 `gpt-6.1-sol`, under the 1,024-token minimum for automatic caching. Five test calls on
 2026-11-16 reported 0 cached tokens, with and without `prompt_cache_key`.
+
+## Second deviation (2026-11-18, two days into the shadow period)
+
+After 51 hours the gate had opened four windows, and three were wrong:
+
+| decided (UTC) | target | headline | problem |
+|---|---|---|---|
+| 11-16 07:51 | BTC | Bitcoin miners were hijacked and their BTC rewards redirected | the victim was the Luxor pool, not BTC |
+| 11-16 16:46 | LIT | Lighter suspends all withdrawals after $10.4 million crypto exploit | a real new event |
+| 11-16 22:31 | MARKET | Binance hack may push institutions to outside custody | commentary on the 2026-10-29 hack |
+| 11-17 09:29 | MARKET | Binance hacker moves $63 million in stolen ether | a follow-up of the same hack |
+
+The two `MARKET` windows overlapped and covered 11-16 22:31 to 11-18 09:29, about 35 of
+51 hours, against criterion (d)'s 5%. The one live entry in that span, SHELL (#397) at
+11-18 03:26, would have been blocked. LIT rose 8.7% in the 41 hours after its window
+opened, after Lighter reopened withdrawals and returned about $5M.
+
+The prompt did not separate a new event from commentary on or follow-ups of an old one,
+and it let a coin count as affected when it was only the asset stolen. The owner chose
+to fix the prompt and restart the period rather than run 12 weeks towards a certain
+rejection under (d). The prompt now:
+
+- allows severity 2 or 3 only for a headline that reports the event as it happens, and
+  caps commentary, analysis, attacker fund movements, frozen or returned funds,
+  reopenings, lawsuits and post-mortems at severity 1;
+- limits `MARKET` to events hitting trading across the market right now;
+- counts a coin as affected only if its own protocol, chain or issuer was attacked,
+  depegged, delisted or acted against.
+
+Replayed on the same 205 headlines, the revised prompt opened windows only on the two
+Lighter headlines (LIT, one event under the merge rule) and none on `MARKET`. That
+replay is in-sample: the prompt was written after reading those headlines, so it shows
+the fix works on the cases that prompted it and nothing more. The previous log and the
+replay are kept in `services/newsgate/state/gpt-prompt1-20261116/` and are not counted.
+
+The restarted period's first decision was logged 2026-11-18 10:16:59 UTC, so the 84
+days end 2027-02-10 10:16 UTC. Its first cycle re-classified the 84 headlines from the
+preceding 24 hours, which overlap the replay set; items published before the restart at
+2026-11-18 10:13 UTC are not counted. The decision rule is unchanged, and the prompt is
+fixed from here.
