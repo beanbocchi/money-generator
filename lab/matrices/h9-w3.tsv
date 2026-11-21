@@ -1,0 +1,5 @@
+base-20261001	NFIX7Risk	20261001-20261121	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json
+stop55-20261001	NFIX7Stop55	20261001-20261121	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json
+stop85-20261001	NFIX7Stop85	20261001-20261121	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json
+stop40-20261001	NFIX7Stop40	20261001-20261121	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json
+stop70-20261001	NFIX7Stop70	20261001-20261121	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json

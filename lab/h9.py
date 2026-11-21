@@ -16,7 +16,11 @@ from analyze import bootstrap_net  # noqa: E402
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 # Rerun baselines, not p1-with-*: Binance delisted EPIC, STG and STORJ after those ran, so
 # the old baselines trade pairs the arms cannot (see ADR-0020 "Deviation").
-WINDOWS = {"20260501": "base-20260501", "20260604": "base-20260604"}
+WINDOWS = {"20260501": "base-20260501", "20260604": "base-20260604",
+           "20261001": "base-20261001"}
+# Window 3 (pre-registered 2026-11-21) cuts off inside a drawdown, so its worst loss also
+# counts force_exit rows at the cutoff, for every arm and the baseline.
+WORST_WITH_CUTOFF = {"20261001"}
 LEVELS = ["40", "55", "70", "85"]
 STOP_EXITS = ("stop_loss", "stoploss_on_exchange")
 
@@ -35,12 +39,13 @@ def key(t):
     return (t["pair"], t["open_date"][:16])
 
 
-def report(base, arm):
+def report(base, arm, with_cutoff=False):
     T = [t for t in arm["trades"] if not t.get("is_open")]
     real = [t for t in T if t["exit_reason"] != "force_exit"]
     forced = [t for t in T if t["exit_reason"] == "force_exit"]
     stops = [t for t in real if t["exit_reason"] in STOP_EXITS]
-    worst = min((t["profit_abs"] for t in real), default=0.0)
+    worst_closed = min((t["profit_abs"] for t in real), default=0.0)
+    worst = min((t["profit_abs"] for t in (T if with_cutoff else real)), default=0.0)
     deep = sum(1 for t in real if t["profit_ratio"] < -0.20)
     bs = bootstrap_net([{"profit": t["profit_abs"]} for t in real])
     dd_cut = str(arm.get("drawdown_end", ""))[:16] == str(arm.get("backtest_end", ""))[:16]
@@ -64,7 +69,7 @@ def report(base, arm):
         else:
             cf.append((t, b, "cost"))
     return dict(total=arm["profit_total_abs"], closed=sum(t["profit_abs"] for t in real),
-                bs=bs, worst=worst, deep=deep, n_stops=len(stops),
+                bs=bs, worst=worst, worst_closed=worst_closed, deep=deep, n_stops=len(stops),
                 stop_pnl=sum(t["profit_abs"] for t in stops), forced=len(forced),
                 forced_pnl=sum(t["profit_abs"] for t in forced),
                 dd=arm.get("max_drawdown_account"), dd_cut=dd_cut,
@@ -78,9 +83,12 @@ def main():
         if base is None:
             print(f"missing baseline {bname}")
             continue
-        b = report(None, base)
+        wc = w in WORST_WITH_CUTOFF
+        b = report(None, base, wc)
+        closed_note = f" (closed only {b['worst_closed']:+.2f})" if wc else ""
         print(f"\n=== window {w}  baseline {bname}: account total {b['total']:+.2f}  "
-              f"worst closed {b['worst']:+.2f}  closed {b['closed']:+.2f} "
+              f"worst {'incl. cutoff' if wc else 'closed'} {b['worst']:+.2f}"
+              f"{closed_note}  closed {b['closed']:+.2f} "
               f"[{b['bs']['lo']:+.0f}..{b['bs']['hi']:+.0f}]  underwater at cutoff "
               f"{b['forced']} ({b['forced_pnl']:+.2f})")
         bound = b["total"] - 0.10 * abs(b["total"])
@@ -89,11 +97,15 @@ def main():
             if arm is None:
                 print(f"  stop{lv}: not run yet")
                 continue
-            r = report(base, arm)
+            r = report(base, arm, wc)
             ok = r["total"] >= bound and r["worst"] > b["worst"]
             verdict[(lv, w)] = ok
             saved = sum(1 for *_, c in r["cf"] if c == "saved")
             cost = sum(1 for *_, c in r["cf"] if c == "cost")
+            if wc:
+                ok_closed = r["total"] >= bound and r["worst_closed"] > b["worst_closed"]
+                print(f"  stop{lv}: closed-only reading (not decisive) -> "
+                      f"{'acceptable' if ok_closed else 'not acceptable'}")
             print(f"  stop{lv}: total {r['total']:+8.2f} (bound {bound:+.2f})  worst {r['worst']:+7.2f}  "
                   f"stops {r['n_stops']} ({r['stop_pnl']:+.2f}) saved/cost/unmatched "
                   f"{saved}/{cost}/{r['n_stops']-saved-cost}  <-20%: {r['deep']}  "
@@ -104,11 +116,17 @@ def main():
             for t, bt, c in r["cf"]:
                 tail = (f"baseline {bt['exit_reason'][:28]} {bt['profit_abs']:+.2f}" if bt else "no baseline twin")
                 print(f"      {t['pair']:<18} {t['close_date'][:16]} stop {t['profit_abs']:+7.2f}  {c:<9} {tail}")
-    print("\n=== decision (rule: acceptable in both windows AND an adjacent level too)")
-    both = {lv: all(verdict.get((lv, w)) for w in WINDOWS) for lv in LEVELS
-            if all((lv, w) in verdict for w in WINDOWS)}
+    decide(verdict, ["20260501", "20260604"], "windows 1-2, as registered 2026-10-30")
+    decide(verdict, list(WINDOWS), "all three windows, deployment rule registered 2026-11-21")
+
+
+def decide(verdict, windows, label):
+    print(f"\n=== decision ({label}): acceptable in every window AND an adjacent level too")
+    both = {lv: all(verdict.get((lv, w)) for w in windows) for lv in LEVELS
+            if all((lv, w) in verdict for w in windows)}
     if len(both) < len(LEVELS):
-        print(f"  incomplete: {len(both)}/{len(LEVELS)} levels have both windows")
+        print(f"  incomplete: {len(both)}/{len(LEVELS)} levels have every window")
+        return
     acc = [lv for i, lv in enumerate(LEVELS) if both.get(lv) and
            ((i > 0 and both.get(LEVELS[i-1])) or (i + 1 < len(LEVELS) and both.get(LEVELS[i+1])))]
     print(f"  accepted levels: {acc or 'none'}")

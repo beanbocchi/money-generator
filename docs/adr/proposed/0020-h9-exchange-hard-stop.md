@@ -1,6 +1,6 @@
 # ADR-0020: H9: a hard stop NFI cannot veto
 
-- Status: proposed; results in 2026-11-16, the rule accepts 0.55 and 0.70; not deployed, awaiting the owner
+- Status: proposed; two windows accept 0.55 and 0.70 (2026-11-16); third window pre-registered 2026-11-21; not deployed
 - Date: 2026-10-30
 - Lab: `lab/matrices/h9-stop.tsv`, `lab/strategies-20260501/NFIX7Stop.py`, `lab/strategies-20260604/NFIX7Stop.py`, report `lab/h9.py`
 - Run: `nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &`, then `python3 lab/h9.py`
@@ -174,3 +174,60 @@ Deploying changes live money and needs the owner's approval. A static stop pins 
 trade's first entry, so open positions that have already moved past 27.5% from their
 first entry would be stopped at once. That list must be checked against the open trades
 on the day, and the owner decides whether those positions get the stop.
+
+## Third window (pre-registered 2026-11-21, before any download or run)
+
+### Why
+
+Both windows above predate the 2x era and overlap by 27 days, so the 2026-06-05 ZEC
+event sits in both. Neither contains a market-wide crash. Since then the live bot went
+through the 2026-10-29 Binance hack and a 33% BTC fall from 2026-09-21 to 2026-11-21,
+and 91% of its booked loss in the last 30 days came from derisk sells (audit
+2026-11-21). A window over that period is the closest the rig gets to "a crash like
+2026-10-29", which the decision rule above called out as missing.
+
+### Arms
+
+| item | value |
+|---|---|
+| window | `20261001-20261121` |
+| strategy version | X7 at upstream `45e1906e1` (2026-09-29), in `lab/strategies-20260929/`; `system_v3_2_stops_enable = False`, like live |
+| overlays | `NFIX7Risk.py` and `NFIX7Stop.py` copied unchanged from `lab/strategies-20260604/`, so all three windows run the same overlay |
+| image | `freqtradeorg/freqtrade@sha256:28f5a4d7091216fec07005cd6c0d5d5c904f013f44be490e87e891c18ded8f91` (built 2026-07-30), the one the other windows used |
+| pairs | `lab/pairlists/w3.json`: the 97 pairs of `live-traded.json` plus the 60 further pairs the live bot opened between 2026-07-30 and 2026-09-30, 157 in all. Only pairs known before the window starts. Pairs freqtrade drops as inactive are listed in the results, because each one hides a possible tail event |
+| config | `lab/config-h7.json`, `--timeframe-detail 1m --dry-run-wallet 780 --enable-protections` |
+| runs | `base-20261001`, `stop{40,55,70,85}-20261001` |
+| data | 1d/4h from 2025-01-01, 1h/15m/5m from 2026-07-01, 1m from 2026-09-25 |
+
+A 4-pair smoke test runs first, only to check that this X7 version loads and trades on
+the pinned image. If it does not, nothing below is run and this section is amended
+before any arm result exists.
+
+### What changes in the measurement for this window
+
+The cutoff, 2026-11-21, falls inside the drawdown, and the baseline will hold large
+positions underwater at it. Counting only closed losses would favour the stop, because
+the stop closes its losses and the baseline does not. In this window **worst loss**
+therefore means the worst of closed losses and `force_exit` rows at the cutoff, for
+every arm including the baseline. Windows 1 and 2 keep their registered definition.
+`lab/h9.py` reports both readings for window 3 and decides on this one.
+
+### Decision rule for deployment
+
+- Acceptable in window 3: the same test as above, with worst loss as defined here.
+- A level is **recommended for live** only if it is acceptable in all three windows and
+  an adjacent level is too. The recommendation is the tightest such level.
+- If 0.55 fails window 3 and a looser level meets the rule, that level is recommended
+  instead. If no level meets it, the rig recommends no stop and reports each level's cost.
+
+This decides the level only. How it would be deployed is a separate ADR: freqtrade
+resets a plain `stoploss` to the average entry of each open trade on restart, while all
+three windows model a stop pinned to the first entry, which live would need a
+`custom_stoploss` for.
+
+### Prediction
+
+0.40 costs too much in window 3 as well. 0.55 and 0.70 are acceptable. The stop arms
+beat the baseline on account total by more than in windows 1 and 2, mostly through
+positions the baseline still holds at the cutoff; that part of the gap says as little
+about recovery as it did there.
