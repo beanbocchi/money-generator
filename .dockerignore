@@ -1,0 +1,8 @@
+# The build needs only the Go sources. Everything else here is large (lab/data, backups)
+# or secret (.env, user_data) and must not reach the build context.
+*
+!go.mod
+!go.sum
+!cmd
+!internal
+internal/**/testdata

@@ -1,0 +1,33 @@
+=== 2026-11-21 11:38:37 UTC / 2026-11-21 18:38:37 local ===
+-- infrastructure
+   bottrade	Up 6 hours (healthy)
+   bottrade-watchdog	Up 4 days
+   health   HTTP 200
+   status   HTTP 200
+   balance  HTTP 200
+   profit   HTTP 200
+   last_process age 1234s   <-- STALE, expect a pairlist refresh or a real stall
+   watchdog alerts: 2   updater restarts: 3
+   updater: HOLDING an update that changes risk settings -> review with bin/mg approve-update
+   updater: NOT RUNNING (auto-updates off)
+   bot ERROR lines (last 500): 14
+   db backups: 3   newest: 20261121T055530Z
+-- account
+   balance 838.89 USDT
+   closed 7  realised -22.63  wins 5/7 (71.4%)  worst -32.05
+   open 5  open-leg -10.09  booked-inside-open -27.29  ALL-IN -60.01   <- matches freqtrade profit_all_coin
+     #238 KAITO/USDT:USDT    L stake  20.53    -6.59 ( -32.1%) liq +36% booked -28.78 open 2026-08-12 11:11  ground(28 entries)
+     #402 BTC/USDT:USDT      S stake   5.00    -2.50 ( -50.0%) liq +5% open 2026-11-21 01:00  <-- LIQUIDATION NEAR  ground(2 entries)
+     #401 UNI/USDT:USDT      L stake  65.67    -1.25 (  -1.9%) liq +47% open 2026-11-20 15:29
+     #403 ETH/USDT:USDT      L stake  10.01    +0.12 (  +1.2%) liq +0% booked +1.50 open 2026-11-21 02:00
+     #404 1000000BABYDOGE/USDT:USDT L stake   7.00    +0.12 (  +1.8%) liq +8% open 2026-11-21 03:00  <-- LIQUIDATION NEAR
+   last 5 closed:
+     #1 ZEC/USDT:USDT      2026-11-15 00:05   +3.19  exit_long_tc_d_2_49 ( 141 142 
+     #3 ASTER/USDT:USDT    2026-11-15 20:17   +1.55  exit_long_normal_d_1_63 ( 2 4 
+     #4 SHELL/USDT:USDT    2026-11-18 07:31   +0.00  
+     #6 IRYS/USDT:USDT     2026-11-20 05:24   +1.70  exit_long_scalp_d_1_60 ( 61 16
+     #5 ZIL/USDT:USDT      2026-11-20 06:32   +2.88  exit_long_normal_d_2_96 ( 2 )
+-- lab
+   queue-h10.log: [queue 2026-11-21T09:00:00Z] job 3/8 running
+   queue: idle
+   disk free: 77G

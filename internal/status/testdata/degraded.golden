@@ -1,0 +1,18 @@
+=== 2026-11-21 11:38:37 UTC / 2026-11-21 18:38:37 local ===
+-- infrastructure
+   health   HTTP 000
+   status   HTTP 000
+   balance  HTTP 000
+   profit   HTTP 000
+   last_process: unreadable
+   watchdog alerts: 0   updater restarts: 0
+   updater: NOT RUNNING (auto-updates off)
+   bot ERROR lines (last 500): 0
+   db backups: 0   newest: 
+-- account
+   balance: unavailable (check exchange credentials / IP allow-list)
+   closed 0  realised +0.00  wins 0/0 (0.0%)  worst +0.00
+   open 0  open-leg +0.00  booked-inside-open +0.00  ALL-IN +0.00   <- matches freqtrade profit_all_coin
+   last 5 closed:
+-- lab
+   queue: RUNNING

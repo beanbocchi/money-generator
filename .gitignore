@@ -36,3 +36,4 @@ __pycache__/
 #   git -C NostalgiaForInfinity show <sha>:NostalgiaForInfinityX7.py
 # The overlays beside them (NFIX7Risk/Cap/Stop) are small and tracked.
 /lab/strategies-*/NostalgiaForInfinityX7.py
+/bin/mg
