@@ -1,1 +1,1 @@
-smoke-20261001	NFIX7Risk	20261101-20261108	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/smoke4.json
+smoke2-20261001	NFIX7Risk	20261015-20261031	lab/strategies-20260929	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/smoke4.json

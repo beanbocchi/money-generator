@@ -231,3 +231,19 @@ three windows model a stop pinned to the first entry, which live would need a
 beat the baseline on account total by more than in windows 1 and 2, mostly through
 positions the baseline still holds at the cutoff; that part of the gap says as little
 about recovery as it did there.
+
+### Deviation (2026-11-21, before any window-3 result)
+
+All five window-3 runs stopped at start-up: the pinned image (built 2026-07-30) has no
+leverage tiers for nine pairs listed after it was built (BIRB, BTW, CFG, CHIP, PRL, RE,
+ROBO, STAR, ZEST), and freqtrade refuses to backtest a pair without them. Those pairs
+are dropped from `lab/pairlists/w3.json`, leaving 148. The image stays pinned so all
+three windows run the same freqtrade. Dropping them removes nine young listings, the
+kind of pair most likely to produce a tail event, so window 3 may understate the
+baseline's tail. No result existed when this was decided.
+
+Smoke test: the first run (BTC, ETH, SOL, APT over 2026-11-01..11-08) loaded the
+strategy and finished with 0 trades, which shows the code loads but not that it trades.
+A second run on BTC, KAITO, NXPC, PHA and AXL over 2026-10-15..10-31, pairs the live bot
+traded then, made 1 trade. PHA and AXL are not in `w3.json`; they were used only for
+the smoke test.

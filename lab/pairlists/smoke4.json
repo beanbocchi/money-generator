@@ -2,9 +2,10 @@
   "exchange": {
     "pair_whitelist": [
       "BTC/USDT:USDT",
-      "ETH/USDT:USDT",
-      "SOL/USDT:USDT",
-      "APT/USDT:USDT"
+      "KAITO/USDT:USDT",
+      "NXPC/USDT:USDT",
+      "PHA/USDT:USDT",
+      "AXL/USDT:USDT"
     ],
     "pair_blacklist": []
   },
