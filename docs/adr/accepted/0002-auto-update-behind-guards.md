@@ -2,8 +2,8 @@
 
 - Status: accepted
 - Date: 2026-07-30; config guard added 2026-08-05
-- Code: `services/updater/update.sh` (`guard`, `config_guard`), `bin/rollback.sh`
-- Tests: `tests/test_updater.sh`, `tests/test_rollback.sh`
+- Code: `internal/updater` (`cycle.go`: import and config guards; `rollback.go`)
+- Tests: `go test ./internal/updater`
 - Related: ADR-0010 adds the fuse on top of this
 
 ## Context

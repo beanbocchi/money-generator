@@ -2,8 +2,8 @@
 
 - Status: rejected (pre-registered 2026-11-16, run the same day; no side met the plateau rule)
 - Date: 2026-11-16; decided 2026-11-16
-- Lab: `lab/tsmom.py`, `lab/tsmom.sh` (backtest and report, self-test with `--self-test`), data in `lab/data-tsmom/`
-- Run: `lab/tsmom.sh download`, then `lab/tsmom.sh run`
+- Lab: `lab/tsmom.py` (backtest and report, self-test with `--self-test`), run through `bin/mg tsmom` (`internal/lab/tsmom.go`), data in `lab/data-tsmom/`
+- Run: `bin/mg tsmom download`, then `bin/mg tsmom run`
 - Related: ADR-0006 (method), ADR-0007 (acceptance), ADR-0003 (leverage cap)
 
 ## Context

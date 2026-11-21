@@ -37,6 +37,21 @@ has one file here. The folder is the current status:
 Records from before 2026-11-15 were moved out of `lab/HYPOTHESES.md` and keep its
 original wording under an "Original record" heading.
 
+On 2026-11-21 the bash and Python tooling was replaced by one Go binary, `mg`. Text in
+records written before then names the old files; the `Code:` and `Tests:` lines point at
+the Go packages. The mapping:
+
+| Before | Now |
+|---|---|
+| `services/updater/update.sh`, `approval.sh` | `internal/updater`, `mg updater` |
+| `bin/approve-update.sh`, `bin/rollback.sh` | `bin/mg approve-update`, `bin/mg rollback` |
+| `services/watchdog/watch.sh` | `internal/watchdog`, `mg watchdog` |
+| `services/dbbackup/backup.sh` | `internal/dbbackup`, `mg dbbackup` |
+| `bin/status.sh`, `bin/setup.sh` | `bin/mg status`, `bin/mg setup` |
+| `services/newsgate/newsgate.py`, `bin/newsgate.sh` | `internal/newsgate`, the `newsgate` compose service |
+| `lab/backtest.sh`, `download.sh`, `queue.sh`, `tsmom.sh` | `bin/mg backtest`, `download`, `queue`, `tsmom` |
+| `tests/*.sh` | `go test ./...` (`make check`) |
+
 ## Accepted
 
 | ADR | Title | Status | Date |

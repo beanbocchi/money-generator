@@ -14,15 +14,16 @@ hypotheses for real.
 
 ## Layout
 
-- `download.sh` fetches Binance futures candles (1d/4h, 1h/15m/5m, 1m) into `lab/data`.
-  `PAIRLIST=` picks the universe.
-- `backtest.sh` runs one strategy over one timerange into `lab/results`.
-- `queue.sh` runs a matrix of backtests one at a time, skips runs whose result already
-  exists, and logs to `lab/logs/queue-<matrix>.log`.
+- `bin/mg download` fetches Binance futures candles (1d/4h, 1h/15m/5m, 1m) into
+  `lab/data`. `PAIRLIST=` picks the universe.
+- `bin/mg backtest` runs one strategy over one timerange into `lab/results`. `IMAGE=`
+  pins the freqtrade image, e.g. by digest.
+- `bin/mg queue` runs a matrix of backtests one at a time, skips runs whose result already
+  exists, and logs to `lab/logs/queue-<matrix>.log`. The code is in `internal/lab`.
 - `analyze.py` reports on result archives; `h9.py` is the pre-registered H9 report.
-- `tsmom.py` and `tsmom.sh` are ADR-0026's trend baseline on BTC and ETH: a pandas
-  backtest with its own data in `lab/data-tsmom/`, small enough to run beside an NFI
-  backtest.
+- `tsmom.py` is ADR-0026's trend baseline on BTC and ETH, run with `bin/mg tsmom
+  download|test|run`: a pandas backtest with its own data in `lab/data-tsmom/`, small
+  enough to run beside an NFI backtest.
 - Pre-registrations, results and retractions are ADRs in `docs/adr/`, filed under
   `proposed/`, `accepted/` or `rejected/`.
 - `matrices/` has one TSV per experiment, named after its hypothesis or result prefix
@@ -47,9 +48,9 @@ in the same directory.
 ## Usage
 
 ```bash
-./lab/download.sh                                                # once, then to refresh
-./lab/backtest.sh NFIX7Risk 20260228-20260716                    # one run
-nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &   # a whole matrix
+bin/mg download                                                   # once, then to refresh
+bin/mg backtest NFIX7Risk 20260228-20260716                       # one run
+nohup bin/mg queue lab/matrices/h9-stop.tsv >/dev/null 2>&1 &     # a whole matrix
 python3 lab/analyze.py backtest lab/results/<name>.zip
 ```
 

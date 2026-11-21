@@ -2,8 +2,8 @@
 
 - Status: accepted
 - Date: 2026-10-30
-- Code: `services/updater/update.sh` (`risk_snapshot`, `risk_diff`, `restarts_today`, `btc_range_pct`), `services/updater/approval.sh`, `bin/approve-update.sh`
-- Tests: `tests/test_updater.sh`
+- Code: `internal/updater` (`risk.go`, `cycle.go`, `approval.go`, `approve.go`)
+- Tests: `go test ./internal/updater`
 
 ## Context
 

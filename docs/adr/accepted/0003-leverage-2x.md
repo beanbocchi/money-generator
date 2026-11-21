@@ -3,7 +3,7 @@
 - Status: accepted
 - Date: before 2026-07-30 (config); hard cap 2026-10-30
 - Code: `user_data/config.json` `nfi_parameters`, `NFIX7Risk.MAX_LEVERAGE`
-- Tests: `tests/test_nfix7risk.sh`
+- Tests: `go test ./internal/repo` (`TestNFIX7Risk`)
 - Related: ADR-0018 rejects going back to 3x
 
 ## Context

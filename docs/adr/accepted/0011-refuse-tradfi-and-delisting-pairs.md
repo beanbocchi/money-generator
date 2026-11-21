@@ -3,7 +3,7 @@
 - Status: accepted
 - Date: 2026-10-30
 - Code: `NFIX7Risk.confirm_trade_entry`
-- Tests: `tests/test_nfix7risk.sh`
+- Tests: `go test ./internal/repo` (`TestNFIX7Risk`)
 
 ## Decision
 

@@ -2,9 +2,9 @@
 
 - Status: proposed; shadow period restarted 2026-11-18 on a revised prompt, runs to 2027-02-10 (see second deviation)
 - Date: 2026-11-16
-- Code: `services/newsgate/newsgate.py` (self-test with `--self-test`), `bin/newsgate.sh`
-- Tests: `tests/test_newsgate.sh`
-- Run: `bin/newsgate.sh once` to check, then `bin/newsgate.sh start`; `bin/newsgate.sh windows` lists would-block windows
+- Code: `internal/newsgate`; the `newsgate` service in `docker-compose.yml`
+- Tests: `go test ./internal/newsgate`
+- Run: `docker compose up -d --no-deps newsgate`; `bin/mg newsgate windows` lists would-block windows, `bin/mg newsgate logs` the last log lines
 - Related: ADR-0019 (why an LLM layer cannot be replayed), ADR-0011 (scheduled delistings), ADR-0026
 
 ## Context
@@ -226,3 +226,18 @@ days end 2027-02-10 10:16 UTC. Its first cycle re-classified the 84 headlines fr
 preceding 24 hours, which overlap the replay set; items published before the restart at
 2026-11-18 10:13 UTC are not counted. The decision rule is unchanged, and the prompt is
 fixed from here.
+
+## Build note (2026-11-21, during the shadow period)
+
+The gate was ported from Python to Go (`internal/newsgate`) and now runs as the
+`newsgate` service in `docker-compose.yml`, from the same image as the other sidecars,
+with only `NEWSGATE_PROXY_KEY` passed to it. The prompt, schema, model, feeds,
+thresholds and record fields are unchanged: a test pins the sha256 of the prompt, the
+schema and the model, and the port was checked against the Python on the same feeds (172
+items, identical ids and timestamps) and on the live log (1,447 records, same fields and
+values). The Go gate picked up the existing `seen.json` and classified nothing twice.
+
+Two things in the log differ from that date on. Lines are compact JSON
+(`{"kind":"cycle",...}` where Python wrote `"kind": "cycle"`), and an HTTP fetch failure
+reads `HTTP 500 Internal Server Error`. Both are format only; the shadow period continues
+and the decision rule is unchanged.

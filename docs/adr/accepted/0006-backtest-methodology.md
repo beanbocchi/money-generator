@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-07-30 to 2026-08-13
-- Code: `lab/backtest.sh` (`STRATDIR`, `configs-pinned/`), `lab/analyze.py` (`split_force_exit`, `load_metrics`, `entry_count`), `lab/queue.sh`
+- Code: `internal/lab` (`backtest.go`: `STRATDIR`, `configs-pinned/`; `queue.go`), `lab/analyze.py` (`split_force_exit`, `load_metrics`, `entry_count`)
 - Related: ADR-0007 (acceptance rule), ADR-0015 (H7)
 
 ## Decision

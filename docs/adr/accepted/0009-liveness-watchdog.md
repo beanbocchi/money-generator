@@ -2,8 +2,8 @@
 
 - Status: accepted
 - Date: 2026-07-31; credentials check 2026-08-05; re-paging 2026-10-30
-- Code: `services/watchdog/watch.sh`
-- Tests: `tests/test_watchdog.sh`
+- Code: `internal/watchdog`
+- Tests: `go test ./internal/watchdog`
 
 ## Context
 

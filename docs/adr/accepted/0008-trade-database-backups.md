@@ -2,8 +2,8 @@
 
 - Status: accepted
 - Date: 2026-07-31
-- Code: `services/dbbackup/backup.sh`
-- Tests: `tests/test_dbbackup.sh`
+- Code: `internal/dbbackup`
+- Tests: `go test ./internal/dbbackup`
 
 ## Context
 
