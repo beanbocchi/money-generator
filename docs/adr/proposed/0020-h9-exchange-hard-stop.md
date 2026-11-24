@@ -1,6 +1,6 @@
 # ADR-0020: H9: a hard stop NFI cannot veto
 
-- Status: proposed; two windows accept 0.55 and 0.70 (2026-11-16); third window pre-registered 2026-11-21; not deployed
+- Status: proposed; all three windows accept 0.55 and 0.70 (2026-11-24); deployment rule recommends 0.55; not deployed
 - Date: 2026-10-30
 - Lab: `lab/matrices/h9-stop.tsv`, `lab/strategies-20260501/NFIX7Stop.py`, `lab/strategies-20260604/NFIX7Stop.py`, report `lab/h9.py`
 - Run: `nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &`, then `python3 lab/h9.py`
@@ -247,3 +247,33 @@ strategy and finished with 0 trades, which shows the code loads but not that it 
 A second run on BTC, KAITO, NXPC, PHA and AXL over 2026-10-15..10-31, pairs the live bot
 traded then, made 1 trade. PHA and AXL are not in `w3.json`; they were used only for
 the smoke test.
+
+### Window 3 results (2026-11-24)
+
+All five runs finished 2026-11-21 13:44 UTC on 148 pairs, consistency check true for
+every arm. Worst loss counts `force_exit` rows at the cutoff, as registered.
+
+| arm | account total | bound | worst incl. cutoff | stop fills | saved / cost / unmatched | underwater at cutoff | verdict |
+|---|---|---|---|---|---|---|---|
+| baseline | +23.85 | | -77.57 | | | 8 (-250.24) | |
+| stop40 | +0.84 | +21.47 | -27.81 | 11 (-236.37) | 6 / 4 / 1 | 2 (-9.41) | not acceptable (total) |
+| stop55 | +58.75 | | -39.06 | 8 (-202.39) | 6 / 1 / 1 | 2 (-10.16) | acceptable |
+| stop70 | +46.86 | | -40.78 | 6 (-172.40) | 5 / 1 / 0 | 3 (-50.93) | acceptable |
+| stop85 | +15.77 | | -41.02 | 6 (-200.22) | 5 / 1 / 0 | 3 (-50.81) | not acceptable (total) |
+
+The closed-only reading, reported and not decisive, rejects every level: the baseline's
+only closed "loss" was +0.03, because its losers were all still open at the cutoff.
+
+**Deployment rule:** 0.55 and 0.70 are acceptable in all three windows and adjacent, so
+both are accepted and the rule recommends **0.55 of margin**.
+
+Against the prediction: 0.40 costs too much, right. 0.55 and 0.70 acceptable, right. The
+stop arms beat the baseline on account total by more than in windows 1 and 2, right
+(+35 for 0.55, against a +24 baseline), and as predicted most of that gap is the
+baseline's -250 underwater at the cutoff. 0.85 failing on total was not predicted.
+
+What this does and does not settle: in three windows the 0.55 stop never cost more than
+the 10% bound and always cut the worst loss roughly in half. It does not show the stop
+makes money; the account-total gains rest on positions the baselines still held at
+each cutoff. Deploying it needs a separate ADR on mechanics (pinned to the first entry
+through `custom_stoploss`, as all three windows modelled) and the owner's approval.
