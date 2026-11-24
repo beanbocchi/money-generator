@@ -17,19 +17,24 @@ Risk changes that need to live somewhere that `git pull` from upstream
   3. no TradFi perps            -> confirm_trade_entry refuses stock/commodity/FX perps.
   4. no pairs being delisted    -> confirm_trade_entry refuses a pair with a scheduled
                                    delisting.
+  5. a hard stop (ADR-0028)     -> custom_stoploss and confirm_trade_exit: a stop at
+                                   HARD_STOP of margin, pinned to the first entry, for
+                                   trades opened from HARD_STOP_FROM on.
 
 Editing NostalgiaForInfinityX7.py directly would work but upstream touches that file in
 almost every commit, so every future pull would conflict. Subclassing keeps the upstream
 file pristine and byte-identical to origin/main.
 
 Everything else -- every entry/exit signal, grinding, derisk -- is inherited unchanged
-from NostalgiaForInfinityX7. Note that there are no doom stops to inherit: upstream set
-system_v3_2_stops_enable = False on 2026-04-19, so liquidation is the only hard stop.
+from NostalgiaForInfinityX7. There are no doom stops to inherit: upstream set
+system_v3_2_stops_enable = False on 2026-04-19, so before ADR-0028 liquidation was the
+only stop.
 """
 
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 # The freqtrade resolver already inserts the strategy directory into sys.path while it
 # imports this module, but make the parent import independent of that implementation
@@ -40,6 +45,12 @@ from NostalgiaForInfinityX7 import NostalgiaForInfinityX7
 
 logger = logging.getLogger(__name__)
 
+# Stop exit names: a software stop that has not moved is "stop_loss"; once custom_stoploss
+# has raised it above the class -0.99 freqtrade calls it "trailing_stop_loss"; an
+# exchange-side stop would be "stoploss_on_exchange". NFI's confirm_trade_exit refuses the
+# first two unless the price is already past liquidation.
+_STOP_EXITS = ("stop_loss", "trailing_stop_loss", "stoploss_on_exchange")
+
 
 class NFIX7Risk(NostalgiaForInfinityX7):
     # Hard ceiling, independent of upstream. The 2.0 in config.json only applies while
@@ -49,6 +60,50 @@ class NFIX7Risk(NostalgiaForInfinityX7):
     # is approved by mistake. With no doom stop, 3x would put open positions roughly half
     # as far from liquidation (measured 2026-10-30: NXPC +37% at 2x vs ~+17% at 3x).
     MAX_LEVERAGE = 2.0
+
+    # ADR-0028 (level from ADR-0020/H9, accepted in three backtest windows): a stop at
+    # HARD_STOP of margin -- a 27.5% adverse move at 2x -- pinned to the price of the
+    # trade's FIRST filled entry, so grind adds below it cannot drag it down. That is
+    # what all three H9 windows modelled. NFI cannot veto it (confirm_trade_exit below).
+    #
+    # Only trades opened from HARD_STOP_FROM on. The class stoploss stays -0.99, so on a
+    # restart freqtrade's stoploss reinitialisation leaves the trades opened before it
+    # exactly as they were, instead of re-basing their stop on today's average entry.
+    HARD_STOP = 0.55
+    HARD_STOP_FROM = datetime(2026, 11, 24, 15, 45, tzinfo=timezone.utc)
+    use_custom_stoploss = True
+
+    def _hard_stop_applies(self, trade) -> bool:
+        return trade.open_date_utc >= self.HARD_STOP_FROM
+
+    def custom_stoploss(self, pair, trade, current_time, current_rate, current_profit,
+                        **kwargs):
+        if not self._hard_stop_applies(trade):
+            return None
+        fills = trade.select_filled_orders(trade.entry_side)
+        if not fills:
+            return None
+        lev = trade.leverage or 1.0
+        first = fills[0].safe_price
+        if trade.is_short:
+            stop = first * (1 + self.HARD_STOP / lev)
+            dist = (stop / current_rate) - 1
+        else:
+            stop = first * (1 - self.HARD_STOP / lev)
+            dist = 1 - (stop / current_rate)
+        # freqtrade's stoploss_from_absolute, inlined so this file imports without
+        # freqtrade in tests. One difference: freqtrade ignores a 0 (falsy) return, so a
+        # price already past the stop would leave the -0.99 stop in place forever.
+        # A tiny distance instead puts the stop just behind the price, where it fires.
+        return max(min(dist, 1.0), 1e-4) * lev
+
+    def confirm_trade_exit(self, pair, trade, order_type, amount, rate, time_in_force,
+                           exit_reason, current_time, **kwargs) -> bool:
+        if exit_reason in _STOP_EXITS and self._hard_stop_applies(trade):
+            return True
+        return super().confirm_trade_exit(pair, trade, order_type, amount, rate,
+                                          time_in_force, exit_reason, current_time,
+                                          **kwargs)
 
     def leverage(self, pair, current_time, current_rate, proposed_leverage, max_leverage,
                  entry_tag, side, **kwargs) -> float:

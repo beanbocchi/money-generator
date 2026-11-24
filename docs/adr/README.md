@@ -69,6 +69,8 @@ the Go packages. The mapping:
 | [ADR-0011](accepted/0011-refuse-tradfi-and-delisting-pairs.md) | Refuse TradFi perps and pairs scheduled for delisting | accepted | 2026-10-30 |
 | [ADR-0012](accepted/0012-api-loopback-no-force-entry.md) | Bind the API to loopback and disable force entries | accepted | 2026-10-30 |
 | [ADR-0013](accepted/0013-durable-pause-switch.md) | Pause entries with initial_state and /stopentry together | accepted | 2026-10-30 |
+| [ADR-0020](accepted/0020-h9-exchange-hard-stop.md) | H9: a hard stop NFI cannot veto | accepted at 0.55, deployed by ADR-0028 | 2026-10-30; 2026-11-24 |
+| [ADR-0028](accepted/0028-deploy-hard-stop.md) | Deploy the H9 hard stop at 0.55 of margin, for new trades only | accepted | 2026-11-24 |
 
 ## Rejected
 
@@ -86,11 +88,9 @@ the Go packages. The mapping:
 
 | ADR | Title | Status | Date |
 |---|---|---|---|
-| [ADR-0020](proposed/0020-h9-exchange-hard-stop.md) | H9: a hard stop NFI cannot veto | proposed; three windows accept 0.55 and 0.70 (2026-11-24), not deployed | 2026-10-30 |
 | [ADR-0021](proposed/0021-h2-tighter-hard-stop.md) | H2: a tighter hard stoploss | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0022](proposed/0022-h3-portfolio-drawdown-halt.md) | H3: a portfolio-level drawdown halt | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0023](proposed/0023-h4-breadth-entry-gate.md) | H4: an altcoin-breadth entry gate | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0024](proposed/0024-h5-volatility-scaled-exposure.md) | H5: exposure scaled by volatility regime | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0025](proposed/0025-h6-pair-age-filter.md) | H6: a longer minimum pair age | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0027](proposed/0027-llm-event-gate-shadow.md) | An LLM news-event entry gate, run in shadow first | proposed; shadow period restarted on a revised prompt, runs to 2027-02-10 | 2026-11-16 |
-| [ADR-0028](proposed/0028-deploy-hard-stop.md) | Deploy the H9 hard stop at 0.55 of margin, for new trades only | proposed; built and checked, waiting for the restart go-ahead | 2026-11-24 |

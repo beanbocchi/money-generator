@@ -1,9 +1,9 @@
 # ADR-0028: Deploy the H9 hard stop at 0.55 of margin, for new trades only
 
-- Status: proposed; built and checked 2026-11-24, waiting for the owner's go-ahead to restart the bot
-- Date: 2026-11-24
-- Code: `lab/strategies-20260929-hardstop/NFIX7Risk.py` (moves to `user_data/strategies/NFIX7Risk.py` on deploy)
-- Tests: `lab/strategies-20260929-hardstop/pending-tests/` (move to `internal/repo/testdata/` on deploy; run by `go test ./internal/repo`)
+- Status: accepted; deployed 2026-11-24 15:45 UTC
+- Date: 2026-11-24; deployed 2026-11-24
+- Code: `user_data/strategies/NFIX7Risk.py` (`custom_stoploss`, `confirm_trade_exit`, `HARD_STOP`, `HARD_STOP_FROM`)
+- Tests: `go test ./internal/repo` (`TestNFIX7Risk`, cases 6 and 7)
 - Lab: `lab/matrices/adr28-check.tsv`, `lab/strategies-20260929-hardstop/NFIX7HardStopCheck.py`, result `hardstop-check-20261001`
 - Related: ADR-0020 (H9, the level), ADR-0003 (2x leverage), ADR-0013 (pause switch)
 
@@ -91,3 +91,15 @@ the stop was live keep their raised stop in the database; it only matters if the
   cancel-and-replace after grind fills.
 - 30 trades opened under the stop have closed: compare their stop fills with what NFI
   did on the same pairs in the backtest windows.
+
+## Deployment record (2026-11-24)
+
+- The owner approved the restart on 2026-11-24.
+- `HARD_STOP_FROM` = 2026-11-24 15:45 UTC. The newest open trade was opened 2026-11-20
+  11:26, so all 9 open trades stay outside the stop.
+- `make check` passed with the new overlay and tests. The import guard and
+  `show-config` passed inside `bottrade`, which was restarted at 15:45:49 UTC and was
+  running again 195 s later, with `use_custom_stoploss: True` and `stoploss: -0.99` in
+  its log.
+- `stop_loss_abs` of all 9 open trades was identical before and after the restart
+  (recorded in `lab/logs/adr28-stops-before.json`).

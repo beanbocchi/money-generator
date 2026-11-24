@@ -1,6 +1,6 @@
 """H9 report: a hard stop NFI cannot veto, against the no-stop baseline.
 
-Computes exactly what H9 (docs/adr/proposed/0020-*) pre-registered, from the result archives, and
+Computes exactly what H9 (docs/adr/accepted/0020-*) pre-registered, from the result archives, and
 applies its decision rule. Written before any H9 run finished; do not tune it afterwards.
 
     python3 lab/h9.py

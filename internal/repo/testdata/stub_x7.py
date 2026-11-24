@@ -6,3 +6,5 @@ class NostalgiaForInfinityX7:
     def confirm_trade_entry(self, *a, **k):
         type(self).calls += 1
         return self.confirm
+    vetoes = True      # upstream refuses stop exits unless past liquidation
+    def confirm_trade_exit(self, *a, **k): return not self.vetoes

@@ -1,6 +1,6 @@
 # ADR-0020: H9: a hard stop NFI cannot veto
 
-- Status: proposed; all three windows accept 0.55 and 0.70 (2026-11-24); deployment rule recommends 0.55; not deployed
+- Status: accepted (0.55); all three windows accept 0.55 and 0.70; deployed by ADR-0028 on 2026-11-24
 - Date: 2026-10-30
 - Lab: `lab/matrices/h9-stop.tsv`, `lab/strategies-20260501/NFIX7Stop.py`, `lab/strategies-20260604/NFIX7Stop.py`, report `lab/h9.py`
 - Run: `nohup bash lab/queue.sh lab/matrices/h9-stop.tsv >/dev/null 2>&1 &`, then `python3 lab/h9.py`

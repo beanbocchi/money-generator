@@ -49,5 +49,41 @@ print("case 5: a broken delisting check fails open, not closed")
 b = bot({"BTC/USDT:USDT": COIN}, Ex(boom=True))
 ok(b.confirm_trade_entry("BTC/USDT:USDT", *args) is True, "still trades when the check is unavailable")
 
+
+print("case 6: hard stop -- pinned to the first entry, only for trades from HARD_STOP_FROM")
+class O:
+    def __init__(self, price): self.safe_price = price
+class T:
+    def __init__(self, opened, fills, short=False, lev=2.0):
+        self.open_date_utc, self.fills, self.is_short, self.leverage = opened, fills, short, lev
+        self.entry_side = "sell" if short else "buy"
+    def select_filled_orders(self, side):
+        assert side == self.entry_side
+        return [O(p) for p in self.fills]
+utc = dt.timezone.utc
+new = NFIX7Risk.HARD_STOP_FROM + dt.timedelta(hours=1)
+old = NFIX7Risk.HARD_STOP_FROM - dt.timedelta(days=30)
+b = bot()
+def stop_price(trade, rate):
+    # what freqtrade's adjust_stop_loss makes of the returned ratio
+    r = b.custom_stoploss("A", trade, new, rate, 0.0)
+    return None if r is None else (rate * (1 + r / trade.leverage) if trade.is_short else rate * (1 - r / trade.leverage))
+t = T(new, [100.0])
+ok(abs(stop_price(t, 100.0) - 72.5) < 1e-9, "long at 2x: stop 27.5% below the first entry")
+t = T(new, [100.0, 80.0, 70.0])
+ok(abs(stop_price(t, 75.0) - 72.5) < 1e-9, "grind adds below do not move it: still 72.5")
+ok(abs(stop_price(T(new, [100.0], short=True), 100.0) - 127.5) < 1e-9, "short: 27.5% above")
+ok(b.custom_stoploss("A", T(old, [100.0]), new, 90.0, 0.0) is None, "a trade opened before HARD_STOP_FROM keeps its stop")
+ok(b.custom_stoploss("A", T(new, []), new, 90.0, 0.0) is None, "no filled entry yet: nothing")
+r = b.custom_stoploss("A", T(new, [100.0]), new, 60.0, 0.0)
+ok(r is not None and 0 < r < 0.001, "price already past the stop: a tiny distance, not 0 (freqtrade ignores 0)")
+
+print("case 7: NFI cannot veto the hard stop, and keeps its say on everything else")
+ex = ("A", None, "market", 1.0, 70.0, "GTC")
+for reason in ("stop_loss", "trailing_stop_loss", "stoploss_on_exchange"):
+    ok(bot().confirm_trade_exit(*ex[:1], T(new, [100.0]), *ex[2:], reason, new) is True, f"{reason} on a new trade goes through")
+ok(bot().confirm_trade_exit("A", T(old, [100.0]), "market", 1.0, 70.0, "GTC", "stop_loss", new) is False, "stop on an old trade: upstream still decides")
+ok(bot().confirm_trade_exit("A", T(new, [100.0]), "market", 1.0, 70.0, "GTC", "exit_long_normal", new) is False, "non-stop exits: upstream still decides")
+
 print(f"passed={P} failed={F}")
 sys.exit(1 if F else 0)
