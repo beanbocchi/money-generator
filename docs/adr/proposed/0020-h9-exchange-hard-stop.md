@@ -277,3 +277,9 @@ the 10% bound and always cut the worst loss roughly in half. It does not show th
 makes money; the account-total gains rest on positions the baselines still held at
 each cutoff. Deploying it needs a separate ADR on mechanics (pinned to the first entry
 through `custom_stoploss`, as all three windows modelled) and the owner's approval.
+
+Pairs freqtrade dropped as inactive in window 3, as registered: COS, D, EPIC, FUN, MLN,
+RLS, SCRT, STG, STORJ, TON, VELODROME and 我踏马来了, leaving 136 of 148. All are delisted
+from Binance futures. Each is a pair whose collapse the window cannot see. The host was
+short of memory during the runs; the kernel log shows no OOM kill, and all five runs
+cover 2026-10-01 to 2026-11-21 with 155 to 158 trades on the same 63 pairs.
