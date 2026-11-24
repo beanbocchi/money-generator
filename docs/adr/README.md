@@ -93,3 +93,4 @@ the Go packages. The mapping:
 | [ADR-0024](proposed/0024-h5-volatility-scaled-exposure.md) | H5: exposure scaled by volatility regime | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0025](proposed/0025-h6-pair-age-filter.md) | H6: a longer minimum pair age | proposed; pre-registered, never run | 2026-07-30 |
 | [ADR-0027](proposed/0027-llm-event-gate-shadow.md) | An LLM news-event entry gate, run in shadow first | proposed; shadow period restarted on a revised prompt, runs to 2027-02-10 | 2026-11-16 |
+| [ADR-0028](proposed/0028-deploy-hard-stop.md) | Deploy the H9 hard stop at 0.55 of margin, for new trades only | proposed; built and checked, waiting for the restart go-ahead | 2026-11-24 |

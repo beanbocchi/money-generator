@@ -1,0 +1,1 @@
+hardstop-check-20261001	NFIX7HardStopCheck	20261001-20261121	lab/strategies-20260929-hardstop	lab/config-h7.json	--timeframe-detail 1m --dry-run-wallet 780 --enable-protections	lab/pairlists/w3.json
