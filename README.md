@@ -93,9 +93,12 @@ The `updater` container loops every `UPDATE_INTERVAL` seconds (default 900):
    - No restart while the bot has logged exchange errors (`-2015`, `Could not load
      markets`) in the last 15 minutes. On 2026-11-17 a restart during an IP allow-list
      failure left the bot unable to start for five hours.
-4. Import the strategy inside the running bot container. Fails → roll the clone back,
-   notify, leave the bot alone.
-5. Passes → record the previous commit, `docker restart`, notify.
+4. Record the running commit in `state/deploying`, move the clone, and import the
+   strategy and load the config inside the running bot container, within
+   `GUARD_TIMEOUT` (300s). Fails → roll the clone back, notify, leave the bot alone.
+5. Passes → record the previous commit, `docker restart`, notify, remove
+   `state/deploying`. An updater that dies between 4 and 5 finds the file on its next
+   cycle and rolls the clone back before doing anything else.
 
 Follow it with `docker compose logs -f updater`. A held update shows in `bin/mg status`.
 

@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,6 +39,7 @@ type Config struct {
 	DryRun         bool
 	RunOnce        bool
 	WatchPaths     []string // pathspecs passed to git diff
+	GuardTimeout   time.Duration
 
 	// The fuse (ADR-0010). A zero gap or limit disables that check.
 	RiskPattern       *regexp.Regexp
@@ -90,6 +92,14 @@ func LoadConfig() (Config, error) {
 	var err error
 	if c.Interval, err = envfile.Seconds("UPDATE_INTERVAL", 900); err != nil {
 		return Config{}, err
+	}
+	// Both guards together take well under a minute. On 2026-11-25 the import guard's
+	// docker exec hung for 25 minutes, until the host was rebooted.
+	if c.GuardTimeout, err = envfile.Seconds("GUARD_TIMEOUT", 300); err != nil {
+		return Config{}, err
+	}
+	if c.GuardTimeout <= 0 {
+		return Config{}, fmt.Errorf("GUARD_TIMEOUT must be a positive number of seconds")
 	}
 	if c.MaxRestartsPerDay, err = envfile.Int("MAX_RESTARTS_PER_DAY", 4); err != nil {
 		return Config{}, err
@@ -175,6 +185,28 @@ func (d stateDir) Read(name string) string {
 		return ""
 	}
 	return strings.TrimRight(string(b), "\n")
+}
+
+// WriteSync is Write followed by fsync of the file and of the directory, so the file
+// survives a power cut or a sysrq reboot that comes right after it.
+func (d stateDir) WriteSync(name, value string) error {
+	f, err := os.OpenFile(d.Path(name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("write %s: %w", name, err)
+	}
+	_, werr := f.WriteString(value + "\n")
+	serr := f.Sync()
+	if err := errors.Join(werr, serr, f.Close()); err != nil {
+		return fmt.Errorf("write %s: %w", name, err)
+	}
+	dir, err := os.Open(string(d))
+	if err != nil {
+		return fmt.Errorf("sync %s: %w", d, err)
+	}
+	if err := errors.Join(dir.Sync(), dir.Close()); err != nil {
+		return fmt.Errorf("sync %s: %w", d, err)
+	}
+	return nil
 }
 
 // Write is `echo "$value" > file`.

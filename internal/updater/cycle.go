@@ -100,6 +100,9 @@ func (u *Updater) docker(ctx context.Context, args ...string) (string, error) {
 // cycle is update.sh's one_cycle. The order of the checks is the order of the shell's.
 func (u *Updater) cycle(ctx context.Context) outcome {
 	log := u.d.Log
+	if !u.undoInterruptedDeploy(ctx) {
+		return outError
+	}
 	if _, err := u.git(ctx, "fetch", "-q", "origin", "main"); err != nil {
 		log.Warn("fetch failed (network?), retrying next cycle", "err", err)
 		return outFetchFailed
@@ -161,6 +164,48 @@ func (u *Updater) cycle(ctx context.Context) outcome {
 		return outDeferred
 	}
 	return u.deploy(ctx, old, newSHA)
+}
+
+// deployingFile holds the commit the tree was on when deploy started moving it. deploy
+// writes it before the reset and removes it once the update is either rolled back or
+// restarted into.
+const deployingFile = "deploying"
+
+// undoInterruptedDeploy puts the tree back on the commit in deployingFile, if that file
+// is there. It is left behind when the updater dies inside deploy. On 2026-11-25 the
+// import guard's docker exec hung, the host was rebooted 25 minutes later, and the next
+// cycle found the tree on a commit the guard had never passed, logged "up to date",
+// and the bot loaded that commit on its next start and failed its config check. It
+// reports whether the cycle can go on.
+func (u *Updater) undoInterruptedDeploy(ctx context.Context) bool {
+	log := u.d.Log
+	old := strings.TrimSpace(u.cfg.StateDir.Read(deployingFile))
+	if old == "" {
+		return true
+	}
+	if _, err := u.git(ctx, "cat-file", "-e", old+"^{commit}"); err != nil {
+		log.Error(fmt.Sprintf("%s names no commit (%q); the tree may hold code the guard never passed, fix by hand and remove the file",
+			u.cfg.StateDir.Path(deployingFile), old), "err", err)
+		return false
+	}
+	if err := u.resetTo(ctx, old); err != nil {
+		return false
+	}
+	if err := u.clearDeploying(); err != nil {
+		return false
+	}
+	log.Warn("the last deploy did not finish, tree put back on " + short(old))
+	_ = u.notify(ctx, fmt.Sprintf("NFI updater: the last update did not finish (updater killed or host rebooted). Tree put back on %s; the update is retried from there.", short(old)))
+	return true
+}
+
+func (u *Updater) clearDeploying() error {
+	err := os.Remove(u.cfg.StateDir.Path(deployingFile))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		u.d.Log.Error("cannot remove "+deployingFile+", the next cycle will roll the tree back again", "err", err)
+		return err
+	}
+	return nil
 }
 
 // snapshot reads the strategy at rev from git objects, so it needs no checkout. A
@@ -388,18 +433,39 @@ func (u *Updater) deploy(ctx context.Context, old, newSHA string) outcome {
 	c := u.cfg
 	ctx = context.WithoutCancel(ctx)
 
+	// context.WithoutCancel covers a cancelled context only. After a SIGKILL, an OOM
+	// kill, a hang or a reboot, the next cycle reads this file and puts the tree back
+	// (undoInterruptedDeploy). The file is synced before the tree moves.
+	if err := u.cfg.StateDir.WriteSync(deployingFile, old); err != nil {
+		log.Error("cannot record the deploy before moving the tree, bot untouched", "err", err)
+		return outError
+	}
+	// rollBack puts the tree back on old and clears the record. If the reset fails the
+	// record stays, and the next cycle tries the reset again.
+	rollBack := func() {
+		if u.resetTo(ctx, old) == nil {
+			_ = u.clearDeploying()
+		}
+	}
+
 	// The import guard runs against the working tree inside the bot container, so the
 	// tree advances here, after every reason not to deploy has been checked.
 	if _, err := u.git(ctx, "reset", "--hard", "-q", newSHA); err != nil {
 		log.Error("advancing the clone to "+short(newSHA)+" failed, bot untouched", "err", err)
-		u.resetTo(ctx, old)
+		rollBack()
 		return outError
 	}
 
 	// Both outcomes are logged. With only failures logged, "guard ran and passed" looks
 	// the same as "guard was skipped" in the audit trail.
-	if err := u.guard(ctx); err != nil {
-		u.resetTo(ctx, old)
+	gctx, cancel := context.WithTimeout(ctx, c.GuardTimeout)
+	err := u.guard(gctx)
+	if err != nil && errors.Is(gctx.Err(), context.DeadlineExceeded) {
+		err = fmt.Errorf("guard did not finish within %s: %w", c.GuardTimeout, err)
+	}
+	cancel()
+	if err != nil {
+		rollBack()
 		log.Error(fmt.Sprintf("guard FAILED for %s, rolled back to %s, bot untouched", short(newSHA), short(old)), "err", err)
 		_ = u.notify(ctx, fmt.Sprintf("NFI %s failed to import - rolled back, bot untouched", short(newSHA)))
 		return outGuardFailed
@@ -409,10 +475,15 @@ func (u *Updater) deploy(ctx context.Context, old, newSHA string) outcome {
 	if c.DryRun {
 		// The tree goes back. Left advanced, the bot's next start of any kind would run
 		// code this dry run had only looked at.
-		u.resetTo(ctx, old)
+		rollBack()
 		log.Info(fmt.Sprintf("DRY_RUN: would restart %s for %s->%s, tree left at %s", c.Target, short(old), short(newSHA), short(old)))
 		return outDryRun
 	}
+
+	// From here the tree holds code the guard passed. The record is cleared only after
+	// the restart, so an updater killed before the restart rolls back and deploys again,
+	// and the bot does not keep running old code while the tree says it is up to date.
+	defer func() { _ = u.clearDeploying() }()
 
 	if err := os.MkdirAll(string(c.StateDir), 0o755); err != nil {
 		log.Error("cannot create the state dir", "err", err)
@@ -448,10 +519,12 @@ func (u *Updater) guard(ctx context.Context) error {
 	return nil
 }
 
-func (u *Updater) resetTo(ctx context.Context, sha string) {
-	if _, err := u.git(ctx, "reset", "--hard", "-q", sha); err != nil {
+func (u *Updater) resetTo(ctx context.Context, sha string) error {
+	_, err := u.git(ctx, "reset", "--hard", "-q", sha)
+	if err != nil {
 		u.d.Log.Error("CANNOT put the clone back on "+short(sha)+", check the host", "err", err)
 	}
+	return err
 }
 
 // recordRestart is `date -u +%s >> restarts`.

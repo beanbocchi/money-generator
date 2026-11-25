@@ -51,7 +51,7 @@ var envKeys = []string{
 	"MIN_RESTART_GAP", "VOL_LIMIT_PCT", "VOL_URL", "VOL_LONG_LIMIT_PCT", "VOL_LONG_URL",
 	"UNHEALTHY_PATTERN", "UNHEALTHY_WINDOW", "TELEGRAM_API", "FREQTRADE__TELEGRAM__TOKEN",
 	"FREQTRADE__TELEGRAM__CHAT_ID", "APPROVAL_TELEGRAM_TOKEN", "APPROVAL_CHAT_ID", "APPROVER_IDS",
-	"APPROVAL_SELFTEST", "SELFTEST_SECONDS", "UPDATER_CONTAINER", "MG_ROOT",
+	"APPROVAL_SELFTEST", "SELFTEST_SECONDS", "UPDATER_CONTAINER", "MG_ROOT", "GUARD_TIMEOUT",
 }
 
 func setEnv(t *testing.T, env map[string]string) {
@@ -303,8 +303,11 @@ func (s *syncBuffer) String() string {
 
 // fakeDocker is stub_docker(): it records every call as one line of space-joined
 // arguments; the import guard, config guard and restart fail on demand, and logs
-// returns botLog.
+// returns botLog. With execHang the import guard blocks until its context ends, and
+// onExec, when set, runs at the start of the import guard.
 type fakeDocker struct {
+	execHang    bool
+	onExec      func()
 	mu          sync.Mutex
 	calls       []string
 	importFail  bool
@@ -315,7 +318,16 @@ type fakeDocker struct {
 	botLog      string
 }
 
-func (d *fakeDocker) Run(_ context.Context, name string, args ...string) (string, error) {
+func (d *fakeDocker) Run(ctx context.Context, name string, args ...string) (string, error) {
+	if len(args) > 0 && args[0] == "exec" && !strings.Contains(strings.Join(args, " "), "show-config") {
+		if d.onExec != nil {
+			d.onExec()
+		}
+		if d.execHang {
+			<-ctx.Done()
+			return "", fmt.Errorf("%s exec: signal: killed", name)
+		}
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	line := strings.Join(args, " ")

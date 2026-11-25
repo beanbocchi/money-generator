@@ -2,9 +2,12 @@ package updater
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/beanbocchi/money-generator/internal/envfile"
@@ -62,6 +65,13 @@ func rollback(ctx context.Context, root string, r runx.Runner, out, errw io.Writ
 	fmt.Fprintf(out, "==> pinning %s to %s\n", nfi, sha)
 	if _, err := r.Run(ctx, "git", "-C", nfi, "reset", "--hard", "-q", sha); err != nil {
 		fmt.Fprintln(errw, err)
+		return 1
+	}
+	// A deploy the updater left unfinished would otherwise move the tree off this pin
+	// when the updater starts again.
+	marker := stateDir(filepath.Dir(prev)).Path(deployingFile)
+	if err := os.Remove(marker); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		fmt.Fprintf(errw, "cannot remove %s: %v\nRemove it before starting %s again.\n", marker, err, updater)
 		return 1
 	}
 

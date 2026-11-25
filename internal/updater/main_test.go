@@ -86,6 +86,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 		"UNHEALTHY_WINDOW":     {c.UnhealthyWindow, "15m"},
 		"TELEGRAM_API":         {c.TelegramAPI, ""},
 		"SELFTEST_SECONDS":     {c.SelftestWait, 180 * time.Second},
+		"GUARD_TIMEOUT":        {c.GuardTimeout, 300 * time.Second},
 		"approval":             {c.ApprovalEnabled(), false},
 	}
 	for name, v := range checks {
@@ -121,6 +122,7 @@ func TestLoadConfigValues(t *testing.T) {
 	for k, v := range map[string]string{
 		"UPDATE_INTERVAL": "15m", "MAX_RESTARTS_PER_DAY": "four", "MIN_RESTART_GAP": "1.5",
 		"VOL_LIMIT_PCT": "2%", "VOL_LONG_LIMIT_PCT": "0.0", "RISK_PATTERN": "stop(", "UNHEALTHY_PATTERN": "[",
+		"GUARD_TIMEOUT": "0",
 	} {
 		setEnv(t, map[string]string{k: v})
 		if _, err := LoadConfig(); err == nil {
